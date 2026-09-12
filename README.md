@@ -1,6 +1,24 @@
 # Surveying Traverse & Land Area Calculator
 
+[![Download APK](https://img.shields.io/badge/Download-APK%20v1.0.0-10B981?style=for-the-badge&logo=android&logoColor=white)](https://github.com/anumpaudel06-cmd/SurveyApp/releases/download/v1.0.0/SurveyApp-v1.0.0.apk)
+[![Latest Release](https://img.shields.io/github/v/release/anumpaudel06-cmd/SurveyApp?style=for-the-badge&color=10B981)](https://github.com/anumpaudel06-cmd/SurveyApp/releases/latest)
+
 A high-precision GIS, surveying, and cadastral computation application built with cross-platform architecture (Android Jetpack Compose & Flutter).
+
+---
+
+## 📲 Download & Install (.apk)
+
+Directly download and install the latest Android application:
+
+- 🚀 **[Download SurveyApp-v1.0.0.apk (Direct Download)](https://github.com/anumpaudel06-cmd/SurveyApp/releases/download/v1.0.0/SurveyApp-v1.0.0.apk)**
+- 📦 **[View All Releases on GitHub](https://github.com/anumpaudel06-cmd/SurveyApp/releases/latest)**
+
+### How to Install:
+1. Download the `.apk` file above directly to your Android device.
+2. Open the downloaded file from your notifications or file manager.
+3. If prompted, allow "Install from Unknown Sources" for your browser / file manager.
+4. Tap **Install** and launch **SurveyApp**!
 
 ---
 
