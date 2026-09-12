@@ -1,0 +1,6 @@
+{
+  "name": "Surveying Traverse & Land Area Calculator",
+  "description": "Professional GIS and surveying traverse computation engine, cadastral unit converter (Bigha and Ropani systems), and interactive land polygon area calculator with Bowditch/Transit adjustment.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
