@@ -6,6 +6,7 @@ import { ConverterScreen } from './screens/ConverterScreen';
 import { TraverseScreen } from './screens/TraverseScreen';
 import { CompassScreen } from './screens/CompassScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
+import { PWAInstallButton } from './components/PWAInstallButton';
 import {
   Calculator,
   PenTool,
@@ -41,6 +42,7 @@ function MainApp() {
           </div>
 
           <div className="flex items-center gap-2">
+            <PWAInstallButton />
             <button
               onClick={() => setIsMobileShell(!isMobileShell)}
               className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 transition-colors"

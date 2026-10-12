@@ -191,6 +191,17 @@ export const SettingsScreen: React.FC = () => {
           <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-600 dark:text-slate-400">
             Current mode: <b className="capitalize text-slate-900 dark:text-slate-100">{theme}</b>. Designed for clear outdoor contrast under direct sunlight with minimal battery consumption.
           </div>
+
+          {/* Install on Android Phone & APK Card */}
+          <div className="p-3.5 rounded-xl bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 space-y-2">
+            <span className="text-xs font-bold text-blue-900 dark:text-blue-100 block">
+              📱 Install App on Your Phone or Download .APK
+            </span>
+            <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+              • <b>Instant Install (No APK needed)</b>: Tap the blue <b>"Install App / APK"</b> button in the top header or open this link in Chrome and tap <i>"Install app / Add to Home screen"</i>.<br />
+              • <b>Need a standalone .APK file?</b> Use PWABuilder (pwabuilder.com) to generate and download signed .apk / .aab files for Android sideloading or Google Play Store.
+            </p>
+          </div>
         </div>
       )}
 

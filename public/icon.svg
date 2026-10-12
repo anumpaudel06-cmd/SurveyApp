@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background with Safe Padding for Maskable -->
+  <rect width="512" height="512" rx="96" fill="url(#bgGrad)" />
+
+  <!-- Grid overlay -->
+  <path d="M 64 160 L 448 160 M 64 256 L 448 256 M 64 352 L 448 352 M 160 64 L 160 448 M 256 64 L 256 448 M 352 64 L 352 448" stroke="#334155" stroke-width="2" stroke-opacity="0.4" />
+
+  <!-- Quadrilateral Survey Boundary -->
+  <polygon points="120,150 392,130 360,380 140,350" fill="rgba(59, 130, 246, 0.18)" stroke="url(#accentGrad)" stroke-width="12" stroke-linejoin="round" />
+
+  <!-- Diagonal Decomposition Line -->
+  <line x1="120" y1="150" x2="360" y2="380" stroke="#60a5fa" stroke-width="6" stroke-dasharray="14 10" />
+
+  <!-- Survey Pegs / Vertices -->
+  <circle cx="120" cy="150" r="18" fill="#3b82f6" stroke="#ffffff" stroke-width="6" />
+  <circle cx="392" cy="130" r="18" fill="#3b82f6" stroke="#ffffff" stroke-width="6" />
+  <circle cx="360" cy="380" r="18" fill="#3b82f6" stroke="#ffffff" stroke-width="6" />
+  <circle cx="140" cy="350" r="18" fill="#3b82f6" stroke="#ffffff" stroke-width="6" />
+
+  <!-- Center Prismatic Compass Symbol -->
+  <circle cx="256" cy="256" r="46" fill="#0f172a" stroke="#f59e0b" stroke-width="6" />
+  <!-- North pointer -->
+  <polygon points="256,220 268,256 256,250 244,256" fill="#ef4444" />
+  <!-- South pointer -->
+  <polygon points="256,292 268,256 256,250 244,256" fill="#94a3b8" />
+  <circle cx="256" cy="256" r="6" fill="#ffffff" />
+</svg>
