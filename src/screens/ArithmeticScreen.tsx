@@ -12,9 +12,6 @@ import {
   X,
   Users,
   Trash2,
-  Copy,
-  Check,
-  RotateCcw,
 } from 'lucide-react';
 
 interface PlotItem {
@@ -42,7 +39,7 @@ export const ArithmeticScreen: React.FC = () => {
   const [plots, setPlots] = useState<PlotItem[]>([
     {
       id: '1',
-      name: 'Plot 1 (कित्ता १)',
+      name: 'Plot 1',
       system: 'ropani',
       r: '1',
       a: '2',
@@ -55,7 +52,7 @@ export const ArithmeticScreen: React.FC = () => {
     },
     {
       id: '2',
-      name: 'Plot 2 (कित्ता २)',
+      name: 'Plot 2',
       system: 'ropani',
       r: '0',
       a: '14',
@@ -94,7 +91,7 @@ export const ArithmeticScreen: React.FC = () => {
       ...plots,
       {
         id: String(Date.now()),
-        name: `Plot ${nextNum} (कित्ता ${nextNum})`,
+        name: `Plot ${nextNum}`,
         system: 'ropani',
         r: '0',
         a: '4',
@@ -122,7 +119,6 @@ export const ArithmeticScreen: React.FC = () => {
 
   // 2. SUBTRACT MODE: Total Land - Deducted Land
   const [subSystem, setSubSystem] = useState<'ropani' | 'bigha'>('ropani');
-  // Total parcel
   const [subR1, setSubR1] = useState<string>('2');
   const [subA1, setSubA1] = useState<string>('8');
   const [subP1, setSubP1] = useState<string>('0');
@@ -131,7 +127,6 @@ export const ArithmeticScreen: React.FC = () => {
   const [subK1, setSubK1] = useState<string>('5');
   const [subDh1, setSubDh1] = useState<string>('0');
 
-  // Deduction (Road/Sale)
   const [subR2, setSubR2] = useState<string>('0');
   const [subA2, setSubA2] = useState<string>('6');
   const [subP2, setSubP2] = useState<string>('2');
@@ -168,7 +163,7 @@ export const ArithmeticScreen: React.FC = () => {
 
   if (opMode === 'add') {
     resultSqFt = plots.reduce((sum, p) => sum + getPlotSqFt(p), 0);
-    titleBadge = 'Total Combined Area (जम्मा जोडिएको कुल क्षेत्रफल)';
+    titleBadge = 'Total Combined Area (Sum)';
   } else if (opMode === 'sub') {
     const origSqFt =
       subSystem === 'ropani'
@@ -181,7 +176,7 @@ export const ArithmeticScreen: React.FC = () => {
         : bighaToSqFt(parseFloat(subB2) || 0, parseFloat(subK2) || 0, parseFloat(subDh2) || 0);
 
     resultSqFt = Math.max(0, origSqFt - dedSqFt);
-    titleBadge = 'Remaining Balance Land (घटाएर बाँकी खुद जग्गा)';
+    titleBadge = 'Remaining Balance Land';
   } else if (opMode === 'split') {
     const totalSqFt =
       splitSystem === 'ropani'
@@ -190,7 +185,7 @@ export const ArithmeticScreen: React.FC = () => {
 
     const count = Math.max(1, parseFloat(heirsCount) || 1);
     resultSqFt = totalSqFt / count;
-    titleBadge = `Per Person Share - ${count} Heirs (प्रति अंशियार भाग - ${count} जना)`;
+    titleBadge = `Per Person Share (${count} Heirs)`;
   } else if (opMode === 'mul') {
     const singleSqFt =
       mulSystem === 'ropani'
@@ -199,7 +194,7 @@ export const ArithmeticScreen: React.FC = () => {
 
     const m = Math.max(0, parseFloat(multiplier) || 1);
     resultSqFt = singleSqFt * m;
-    titleBadge = `Multiplied Area - ${m} Plots (गुणन गरिएको जम्मा क्षेत्रफल)`;
+    titleBadge = `Multiplied Area (${m} Plots)`;
   }
 
   const results = getAllUnitsFromSqFt(resultSqFt);
@@ -207,65 +202,65 @@ export const ArithmeticScreen: React.FC = () => {
   return (
     <div className="space-y-3 pb-8 max-w-xl mx-auto">
       {/* 1. Operation Tabs */}
-      <div className="bg-white border border-slate-200 rounded-xl p-1.5 shadow-xs grid grid-cols-4 gap-1 text-xs font-medium">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1.5 shadow-xs grid grid-cols-4 gap-1 text-xs font-medium">
         <button
           onClick={() => setOpMode('add')}
           className={`py-2 px-1 rounded-lg text-center flex flex-col items-center justify-center transition-colors ${
             opMode === 'add'
-              ? 'bg-slate-900 text-white font-semibold'
-              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-semibold'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <div className="flex items-center gap-1">
             <Plus className="w-3.5 h-3.5" />
-            <span>Add (जोड्ने)</span>
+            <span>Add</span>
           </div>
-          <span className="text-[10px] opacity-80 mt-0.5">Sum Plots</span>
+          <span className="text-[10px] opacity-75 mt-0.5">Sum Plots</span>
         </button>
 
         <button
           onClick={() => setOpMode('sub')}
           className={`py-2 px-1 rounded-lg text-center flex flex-col items-center justify-center transition-colors ${
             opMode === 'sub'
-              ? 'bg-slate-900 text-white font-semibold'
-              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-semibold'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <div className="flex items-center gap-1">
             <Minus className="w-3.5 h-3.5" />
-            <span>Subtract (घटाउने)</span>
+            <span>Subtract</span>
           </div>
-          <span className="text-[10px] opacity-80 mt-0.5">Deduct Land</span>
+          <span className="text-[10px] opacity-75 mt-0.5">Deduct Land</span>
         </button>
 
         <button
           onClick={() => setOpMode('split')}
           className={`py-2 px-1 rounded-lg text-center flex flex-col items-center justify-center transition-colors ${
             opMode === 'split'
-              ? 'bg-slate-900 text-white font-semibold'
-              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-semibold'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <div className="flex items-center gap-1">
             <Users className="w-3.5 h-3.5" />
-            <span>Divide (अंशबन्डा)</span>
+            <span>Divide</span>
           </div>
-          <span className="text-[10px] opacity-80 mt-0.5">Heir Shares</span>
+          <span className="text-[10px] opacity-75 mt-0.5">Heir Shares</span>
         </button>
 
         <button
           onClick={() => setOpMode('mul')}
           className={`py-2 px-1 rounded-lg text-center flex flex-col items-center justify-center transition-colors ${
             opMode === 'mul'
-              ? 'bg-slate-900 text-white font-semibold'
-              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-semibold'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
           <div className="flex items-center gap-1">
             <X className="w-3.5 h-3.5" />
-            <span>Multiply (गुणन)</span>
+            <span>Multiply</span>
           </div>
-          <span className="text-[10px] opacity-80 mt-0.5">Repeat Plots</span>
+          <span className="text-[10px] opacity-75 mt-0.5">Repeat Plots</span>
         </button>
       </div>
 
@@ -273,15 +268,15 @@ export const ArithmeticScreen: React.FC = () => {
       {opMode === 'add' && (
         <div className="space-y-2.5">
           <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-semibold text-slate-800">
-              Land Parcels List (जोडिने जग्गा कित्ताहरू)
+            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+              Land Parcels List ({plots.length} Parcels)
             </span>
             <button
               onClick={handleAddPlot}
-              className="px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-1 text-xs font-medium transition-colors"
+              className="px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 flex items-center gap-1 text-xs font-medium transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Add Plot (अर्को कित्ता थप्नुहोस्)</span>
+              <span>Add Plot</span>
             </button>
           </div>
 
@@ -290,18 +285,18 @@ export const ArithmeticScreen: React.FC = () => {
             return (
               <div
                 key={plot.id}
-                className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs space-y-2"
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-xs space-y-2"
               >
-                <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 text-slate-800 font-mono font-bold text-[11px] flex items-center justify-center">
+                    <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-mono font-bold text-[11px] flex items-center justify-center">
                       {idx + 1}
                     </span>
                     <input
                       type="text"
                       value={plot.name}
                       onChange={(e) => updatePlot(plot.id, 'name', e.target.value)}
-                      className="text-xs font-semibold text-slate-800 bg-transparent border-none outline-none focus:underline"
+                      className="text-xs font-semibold text-slate-800 dark:text-slate-200 bg-transparent border-none outline-none focus:underline"
                     />
                   </div>
 
@@ -309,11 +304,11 @@ export const ArithmeticScreen: React.FC = () => {
                     <select
                       value={plot.system}
                       onChange={(e) => updatePlot(plot.id, 'system', e.target.value)}
-                      className="text-[11px] font-medium bg-slate-50 border border-slate-200 rounded px-2 py-0.5 text-slate-700 outline-none"
+                      className="text-[11px] font-medium bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2 py-0.5 text-slate-700 dark:text-slate-300 outline-none"
                     >
-                      <option value="ropani">Ropani (रोपनी)</option>
-                      <option value="bigha">Bigha (बिघा)</option>
-                      <option value="sqft">Sq Ft (वर्ग फिट)</option>
+                      <option value="ropani">Ropani System</option>
+                      <option value="bigha">Bigha System</option>
+                      <option value="sqft">Sq Ft</option>
                     </select>
 
                     {plots.length > 1 && (
@@ -332,46 +327,46 @@ export const ArithmeticScreen: React.FC = () => {
                 {plot.system === 'ropani' && (
                   <div className="grid grid-cols-4 gap-2 text-xs">
                     <div>
-                      <span className="text-[10px] text-slate-500 block mb-0.5">Ropani (रो)</span>
+                      <span className="text-[10px] text-slate-500 block mb-0.5">Ropani</span>
                       <input
                         type="number"
                         min="0"
                         value={plot.r}
                         onChange={(e) => updatePlot(plot.id, 'r', e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-center font-mono font-bold text-slate-900"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-center font-mono font-bold text-slate-900 dark:text-slate-100"
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-500 block mb-0.5">Aana (आ)</span>
+                      <span className="text-[10px] text-slate-500 block mb-0.5">Aana</span>
                       <input
                         type="number"
                         min="0"
                         max="15"
                         value={plot.a}
                         onChange={(e) => updatePlot(plot.id, 'a', e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-center font-mono font-bold text-slate-900"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-center font-mono font-bold text-slate-900 dark:text-slate-100"
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-500 block mb-0.5">Paisa (पै)</span>
+                      <span className="text-[10px] text-slate-500 block mb-0.5">Paisa</span>
                       <input
                         type="number"
                         min="0"
                         max="3"
                         value={plot.p}
                         onChange={(e) => updatePlot(plot.id, 'p', e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-center font-mono font-bold text-slate-900"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-center font-mono font-bold text-slate-900 dark:text-slate-100"
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-500 block mb-0.5">Daam (दा)</span>
+                      <span className="text-[10px] text-slate-500 block mb-0.5">Daam</span>
                       <input
                         type="number"
                         min="0"
                         step="any"
                         value={plot.d}
                         onChange={(e) => updatePlot(plot.id, 'd', e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-center font-mono font-bold text-slate-900"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-center font-mono font-bold text-slate-900 dark:text-slate-100"
                       />
                     </div>
                   </div>
@@ -380,35 +375,35 @@ export const ArithmeticScreen: React.FC = () => {
                 {plot.system === 'bigha' && (
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div>
-                      <span className="text-[10px] text-slate-500 block mb-0.5">Bigha (बि)</span>
+                      <span className="text-[10px] text-slate-500 block mb-0.5">Bigha</span>
                       <input
                         type="number"
                         min="0"
                         value={plot.b}
                         onChange={(e) => updatePlot(plot.id, 'b', e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-center font-mono font-bold text-slate-900"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-center font-mono font-bold text-slate-900 dark:text-slate-100"
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-500 block mb-0.5">Kattha (क)</span>
+                      <span className="text-[10px] text-slate-500 block mb-0.5">Kattha</span>
                       <input
                         type="number"
                         min="0"
                         max="19"
                         value={plot.k}
                         onChange={(e) => updatePlot(plot.id, 'k', e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-center font-mono font-bold text-slate-900"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-center font-mono font-bold text-slate-900 dark:text-slate-100"
                       />
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-500 block mb-0.5">Dhur (धु)</span>
+                      <span className="text-[10px] text-slate-500 block mb-0.5">Dhur</span>
                       <input
                         type="number"
                         min="0"
                         step="any"
                         value={plot.dh}
                         onChange={(e) => updatePlot(plot.id, 'dh', e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-center font-mono font-bold text-slate-900"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-center font-mono font-bold text-slate-900 dark:text-slate-100"
                       />
                     </div>
                   </div>
@@ -422,13 +417,13 @@ export const ArithmeticScreen: React.FC = () => {
                       placeholder="Enter Sq Ft"
                       value={plot.sqftVal}
                       onChange={(e) => updatePlot(plot.id, 'sqftVal', e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 font-mono font-bold text-slate-900 text-xs"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-3 py-1.5 font-mono font-bold text-slate-900 dark:text-slate-100 text-xs"
                     />
                   </div>
                 )}
 
                 <div className="text-[11px] text-slate-500 text-right font-mono">
-                  Plot Area: {sqft.toLocaleString('en-US', { maximumFractionDigits: 1 })} sq ft
+                  Parcel Area: {sqft.toLocaleString('en-US', { maximumFractionDigits: 1 })} sq ft
                 </div>
               </div>
             );
@@ -438,21 +433,21 @@ export const ArithmeticScreen: React.FC = () => {
 
       {/* 3. MODE 2: SUBTRACT LAND */}
       {opMode === 'sub' && (
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3.5">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-            <span className="text-xs font-semibold text-slate-800">
-              Land Subtraction (जग्गा घटाउने / कटाउने)
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3.5">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+              Land Subtraction
             </span>
-            <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
               <button
                 onClick={() => setSubSystem('ropani')}
-                className={`px-2.5 py-0.5 rounded ${subSystem === 'ropani' ? 'bg-white font-semibold text-slate-900' : 'text-slate-600'}`}
+                className={`px-2.5 py-0.5 rounded ${subSystem === 'ropani' ? 'bg-white dark:bg-slate-900 font-semibold text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}
               >
                 Ropani
               </button>
               <button
                 onClick={() => setSubSystem('bigha')}
-                className={`px-2.5 py-0.5 rounded ${subSystem === 'bigha' ? 'bg-white font-semibold text-slate-900' : 'text-slate-600'}`}
+                className={`px-2.5 py-0.5 rounded ${subSystem === 'bigha' ? 'bg-white dark:bg-slate-900 font-semibold text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}
               >
                 Bigha
               </button>
@@ -461,8 +456,8 @@ export const ArithmeticScreen: React.FC = () => {
 
           {/* Initial Land */}
           <div>
-            <label className="text-[11px] font-semibold text-slate-700 block mb-1">
-              1. Total Original Land (मूल जग्गा):
+            <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+              1. Total Original Parcel:
             </label>
             {subSystem === 'ropani' ? (
               <div className="grid grid-cols-4 gap-2">
@@ -471,28 +466,28 @@ export const ArithmeticScreen: React.FC = () => {
                   placeholder="Ropani"
                   value={subR1}
                   onChange={(e) => setSubR1(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Aana"
                   value={subA1}
                   onChange={(e) => setSubA1(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Paisa"
                   value={subP1}
                   onChange={(e) => setSubP1(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Daam"
                   value={subD1}
                   onChange={(e) => setSubD1(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
               </div>
             ) : (
@@ -502,21 +497,21 @@ export const ArithmeticScreen: React.FC = () => {
                   placeholder="Bigha"
                   value={subB1}
                   onChange={(e) => setSubB1(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Kattha"
                   value={subK1}
                   onChange={(e) => setSubK1(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Dhur"
                   value={subDh1}
                   onChange={(e) => setSubDh1(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
               </div>
             )}
@@ -524,8 +519,8 @@ export const ArithmeticScreen: React.FC = () => {
 
           {/* Deduct Portion */}
           <div>
-            <label className="text-[11px] font-semibold text-rose-700 block mb-1">
-              2. Portion to Deduct / Sell / Road (घटाइने बाटो वा बिक्री जग्गा) (-):
+            <label className="text-[11px] font-semibold text-rose-600 block mb-1">
+              2. Portion to Deduct / Sold / Road (-):
             </label>
             {subSystem === 'ropani' ? (
               <div className="grid grid-cols-4 gap-2">
@@ -534,28 +529,28 @@ export const ArithmeticScreen: React.FC = () => {
                   placeholder="Ropani"
                   value={subR2}
                   onChange={(e) => setSubR2(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Aana"
                   value={subA2}
                   onChange={(e) => setSubA2(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Paisa"
                   value={subP2}
                   onChange={(e) => setSubP2(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Daam"
                   value={subD2}
                   onChange={(e) => setSubD2(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
               </div>
             ) : (
@@ -565,21 +560,21 @@ export const ArithmeticScreen: React.FC = () => {
                   placeholder="Bigha"
                   value={subB2}
                   onChange={(e) => setSubB2(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Kattha"
                   value={subK2}
                   onChange={(e) => setSubK2(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Dhur"
                   value={subDh2}
                   onChange={(e) => setSubDh2(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
               </div>
             )}
@@ -589,21 +584,21 @@ export const ArithmeticScreen: React.FC = () => {
 
       {/* 4. MODE 3: SPLIT / HEIRS DIVISION */}
       {opMode === 'split' && (
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3.5">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-            <span className="text-xs font-semibold text-slate-800">
-              Inheritance Partition (अंशबन्डा / बराबर भाग लगाउने)
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3.5">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+              Inheritance Partition
             </span>
-            <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
               <button
                 onClick={() => setSplitSystem('ropani')}
-                className={`px-2.5 py-0.5 rounded ${splitSystem === 'ropani' ? 'bg-white font-semibold text-slate-900' : 'text-slate-600'}`}
+                className={`px-2.5 py-0.5 rounded ${splitSystem === 'ropani' ? 'bg-white dark:bg-slate-900 font-semibold text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}
               >
                 Ropani
               </button>
               <button
                 onClick={() => setSplitSystem('bigha')}
-                className={`px-2.5 py-0.5 rounded ${splitSystem === 'bigha' ? 'bg-white font-semibold text-slate-900' : 'text-slate-600'}`}
+                className={`px-2.5 py-0.5 rounded ${splitSystem === 'bigha' ? 'bg-white dark:bg-slate-900 font-semibold text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}
               >
                 Bigha
               </button>
@@ -611,8 +606,8 @@ export const ArithmeticScreen: React.FC = () => {
           </div>
 
           <div>
-            <label className="text-[11px] font-semibold text-slate-700 block mb-1">
-              Total Parental Land (भाग लगाउने कुल जग्गा):
+            <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+              Total Parcel to Partition:
             </label>
             {splitSystem === 'ropani' ? (
               <div className="grid grid-cols-4 gap-2">
@@ -621,28 +616,28 @@ export const ArithmeticScreen: React.FC = () => {
                   placeholder="Ropani"
                   value={splitR}
                   onChange={(e) => setSplitR(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Aana"
                   value={splitA}
                   onChange={(e) => setSplitA(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Paisa"
                   value={splitP}
                   onChange={(e) => setSplitP(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Daam"
                   value={splitD}
                   onChange={(e) => setSplitD(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
               </div>
             ) : (
@@ -652,29 +647,29 @@ export const ArithmeticScreen: React.FC = () => {
                   placeholder="Bigha"
                   value={splitB}
                   onChange={(e) => setSplitB(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Kattha"
                   value={splitK}
                   onChange={(e) => setSplitK(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Dhur"
                   value={splitDh}
                   onChange={(e) => setSplitDh(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
               </div>
             )}
           </div>
 
           <div>
-            <label className="text-[11px] font-semibold text-slate-800 block mb-1">
-              Number of Heirs / Shares (अंशियार संख्या):
+            <label className="text-[11px] font-semibold text-slate-800 dark:text-slate-200 block mb-1">
+              Number of Heirs / Equal Shares:
             </label>
             <div className="flex gap-2">
               <input
@@ -682,14 +677,14 @@ export const ArithmeticScreen: React.FC = () => {
                 min="1"
                 value={heirsCount}
                 onChange={(e) => setHeirsCount(e.target.value)}
-                className="w-24 bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 font-mono font-bold text-sm text-slate-900"
+                className="w-24 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 font-mono font-bold text-sm text-slate-900 dark:text-slate-100"
               />
               <div className="flex gap-1.5 text-xs">
                 {['2', '3', '4', '5'].map((num) => (
                   <button
                     key={num}
                     onClick={() => setHeirsCount(num)}
-                    className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium"
+                    className="px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium"
                   >
                     {num} Heirs
                   </button>
@@ -702,21 +697,21 @@ export const ArithmeticScreen: React.FC = () => {
 
       {/* 5. MODE 4: MULTIPLY */}
       {opMode === 'mul' && (
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3.5">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-            <span className="text-xs font-semibold text-slate-800">
-              Multiply Standard Plots (समान कित्ता गुणन)
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-3.5">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+              Multiply Standard Plots
             </span>
-            <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+            <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
               <button
                 onClick={() => setMulSystem('ropani')}
-                className={`px-2.5 py-0.5 rounded ${mulSystem === 'ropani' ? 'bg-white font-semibold text-slate-900' : 'text-slate-600'}`}
+                className={`px-2.5 py-0.5 rounded ${mulSystem === 'ropani' ? 'bg-white dark:bg-slate-900 font-semibold text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}
               >
                 Ropani
               </button>
               <button
                 onClick={() => setMulSystem('bigha')}
-                className={`px-2.5 py-0.5 rounded ${mulSystem === 'bigha' ? 'bg-white font-semibold text-slate-900' : 'text-slate-600'}`}
+                className={`px-2.5 py-0.5 rounded ${mulSystem === 'bigha' ? 'bg-white dark:bg-slate-900 font-semibold text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}
               >
                 Bigha
               </button>
@@ -724,8 +719,8 @@ export const ArithmeticScreen: React.FC = () => {
           </div>
 
           <div>
-            <label className="text-[11px] font-semibold text-slate-700 block mb-1">
-              Single Plot Size (एउटा कित्ताको क्षेत्रफल):
+            <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+              Unit Plot Size:
             </label>
             {mulSystem === 'ropani' ? (
               <div className="grid grid-cols-4 gap-2">
@@ -734,28 +729,28 @@ export const ArithmeticScreen: React.FC = () => {
                   placeholder="Ropani"
                   value={mulR}
                   onChange={(e) => setMulR(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Aana"
                   value={mulA}
                   onChange={(e) => setMulA(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Paisa"
                   value={mulP}
                   onChange={(e) => setMulP(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Daam"
                   value={mulD}
                   onChange={(e) => setMulD(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
               </div>
             ) : (
@@ -765,42 +760,42 @@ export const ArithmeticScreen: React.FC = () => {
                   placeholder="Bigha"
                   value={mulB}
                   onChange={(e) => setMulB(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Kattha"
                   value={mulK}
                   onChange={(e) => setMulK(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
                 <input
                   type="number"
                   placeholder="Dhur"
                   value={mulDh}
                   onChange={(e) => setMulDh(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded p-1.5 text-center font-mono text-xs font-bold"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-center font-mono text-xs font-bold"
                 />
               </div>
             )}
           </div>
 
           <div>
-            <label className="text-[11px] font-semibold text-slate-800 block mb-1">
-              Quantity / Number of Plots (समान कित्ता संख्या) (×):
+            <label className="text-[11px] font-semibold text-slate-800 dark:text-slate-200 block mb-1">
+              Quantity / Multiplier (×):
             </label>
             <input
               type="number"
               min="1"
               value={multiplier}
               onChange={(e) => setMultiplier(e.target.value)}
-              className="w-24 bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 font-mono font-bold text-sm text-slate-900"
+              className="w-24 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 font-mono font-bold text-sm text-slate-900 dark:text-slate-100"
             />
           </div>
         </div>
       )}
 
-      {/* 6. Arithmetic Results Output Badge */}
+      {/* 6. Results Output Badge */}
       <UnitResultsBadge results={results} title={titleBadge} />
     </div>
   );

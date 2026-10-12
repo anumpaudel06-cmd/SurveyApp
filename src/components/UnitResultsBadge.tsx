@@ -1,141 +1,165 @@
 import React, { useState } from 'react';
-import { MultiUnitAreaResult } from '../units';
+import {
+  MultiUnitAreaResult,
+  KHETMURI_SQFT,
+  SQYD_TO_SQFT,
+  SQMI_TO_SQFT,
+  SQKM_TO_SQFT,
+} from '../units';
 import { Copy, Check } from 'lucide-react';
 
 interface UnitResultsBadgeProps {
   results: MultiUnitAreaResult;
-  isMetric?: boolean;
-  onToggleUnit?: () => void;
   title?: string;
 }
 
 export const UnitResultsBadge: React.FC<UnitResultsBadgeProps> = ({
   results,
-  isMetric = false,
-  onToggleUnit,
-  title = 'Calculated Area (गणना गरिएको क्षेत्रफल)',
+  title = 'Total Parcel Area',
 }) => {
   const [copied, setCopied] = useState(false);
 
+  const sqFt = results.sqFt;
+  const sqYd = sqFt / SQYD_TO_SQFT;
+  const sqMi = sqFt / SQMI_TO_SQFT;
+  const sqKm = sqFt / SQKM_TO_SQFT;
+  const khetmuri = sqFt / KHETMURI_SQFT;
+
   const handleCopy = () => {
-    const text = `Land Survey Pro (जग्गा नापी प्रो):
-• Square Feet (वर्ग फिट): ${results.sqFt.toLocaleString('en-US', { maximumFractionDigits: 2 })} sq ft
-• Square Meters (वर्ग मिटर): ${results.sqM.toLocaleString('en-US', { maximumFractionDigits: 2 })} sq m
-• Ropani System (रोपनी-आना-पैसा-दाम): ${results.ropani.formatted}
-  (${results.ropani.ropani} Ropani, ${results.ropani.aana} Aana, ${results.ropani.paisa} Paisa, ${results.ropani.daam} Daam)
-• Bigha System (बिघा-कट्ठा-धुर): ${results.bigha.formatted}
-  (${results.bigha.bigha} Bigha, ${results.bigha.kattha} Kattha, ${results.bigha.dhur} Dhur)
-• Acres (एकर): ${results.acres.toFixed(4)} ac
-• Hectares (हेक्टर): ${results.hectares.toFixed(4)} ha`;
+    const text = `${title}:
+• Square Feet: ${sqFt.toLocaleString('en-US', { maximumFractionDigits: 2 })} sq ft
+• Square Meters: ${results.sqM.toLocaleString('en-US', { maximumFractionDigits: 2 })} m²
+• Acres: ${results.acres.toFixed(4)} ac
+• Hectares: ${results.hectares.toFixed(4)} ha
+• Square Yards: ${sqYd.toLocaleString('en-US', { maximumFractionDigits: 2 })} sq yd
+• Ropani-Aana-Paisa-Daam: ${results.ropani.formatted} (${results.ropani.ropani} Ropani, ${results.ropani.aana} Aana, ${results.ropani.paisa} Paisa, ${results.ropani.daam} Daam)
+• Bigha-Kattha-Dhur: ${results.bigha.formatted} (${results.bigha.bigha} Bigha, ${results.bigha.kattha} Kattha, ${results.bigha.dhur} Dhur)
+• Khetmuri: ${khetmuri.toFixed(4)}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3.5">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs space-y-3">
       {/* Header */}
-      <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
         <div>
-          <span className="text-[11px] font-medium text-slate-500">Output Summary (नतिजा सारांश)</span>
-          <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Area Summary</span>
+          <h3 className="text-xs font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
         </div>
-        <div className="flex items-center gap-2">
-          {onToggleUnit && (
-            <button
-              onClick={onToggleUnit}
-              className="text-xs px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors"
-            >
-              {isMetric ? 'Metric (मिटर)' : 'Feet (फिट)'}
-            </button>
-          )}
-          <button
-            onClick={handleCopy}
-            className="px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-1.5 text-xs font-medium transition-colors"
-            title="Copy all units"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copied ? 'Copied (कपी भयो)' : 'Copy (कपी)'}</span>
-          </button>
-        </div>
+        <button
+          onClick={handleCopy}
+          className="px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 flex items-center gap-1.5 text-xs font-medium transition-colors"
+          title="Copy all units"
+        >
+          {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+          <span>{copied ? 'Copied' : 'Copy All'}</span>
+        </button>
       </div>
 
-      {/* Primary Highlights: 2 main Nepali Systems */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      {/* Primary Highlights: Ropani & Bigha Systems */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {/* Ropani System */}
-        <div className="bg-slate-50 border border-slate-200/80 rounded-lg p-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-800">
-              Ropani System (पहाडी प्रणाली)
+        <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 rounded-lg p-2.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-slate-800 dark:text-slate-200">
+              Ropani System (R-A-P-D)
             </span>
-            <span className="text-[11px] text-slate-500">R-A-P-D (रो-आ-पै-दा)</span>
+            <span className="font-mono font-bold text-slate-900 dark:text-white">
+              {results.ropani.formatted}
+            </span>
           </div>
-          <div className="text-lg font-bold font-mono text-slate-950 mt-1">
-            {results.ropani.formatted}
-          </div>
-          <div className="text-[11px] text-slate-600 mt-1 flex flex-wrap gap-x-2">
-            <span><b>{results.ropani.ropani}</b> Ropani (रोपनी)</span>
-            <span><b>{results.ropani.aana}</b> Aana (आना)</span>
-            <span><b>{results.ropani.paisa}</b> Paisa (पैसा)</span>
-            <span><b>{results.ropani.daam}</b> Daam (दाम)</span>
+          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 flex flex-wrap gap-x-2">
+            <span><b>{results.ropani.ropani}</b> Ropani</span>
+            <span><b>{results.ropani.aana}</b> Aana</span>
+            <span><b>{results.ropani.paisa}</b> Paisa</span>
+            <span><b>{results.ropani.daam}</b> Daam</span>
           </div>
         </div>
 
         {/* Bigha System */}
-        <div className="bg-slate-50 border border-slate-200/80 rounded-lg p-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-800">
-              Bigha System (तराई प्रणाली)
+        <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 rounded-lg p-2.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-slate-800 dark:text-slate-200">
+              Bigha System (B-K-D)
             </span>
-            <span className="text-[11px] text-slate-500">B-K-D (बि-क-धु)</span>
+            <span className="font-mono font-bold text-slate-900 dark:text-white">
+              {results.bigha.formatted}
+            </span>
           </div>
-          <div className="text-lg font-bold font-mono text-slate-950 mt-1">
-            {results.bigha.formatted}
-          </div>
-          <div className="text-[11px] text-slate-600 mt-1 flex flex-wrap gap-x-2">
-            <span><b>{results.bigha.bigha}</b> Bigha (बिघा)</span>
-            <span><b>{results.bigha.kattha}</b> Kattha (कट्ठा)</span>
-            <span><b>{results.bigha.dhur}</b> Dhur (धुर)</span>
+          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 flex flex-wrap gap-x-2">
+            <span><b>{results.bigha.bigha}</b> Bigha</span>
+            <span><b>{results.bigha.kattha}</b> Kattha</span>
+            <span><b>{results.bigha.dhur}</b> Dhur</span>
           </div>
         </div>
       </div>
 
       {/* Standard Units Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
-        {/* Square Feet */}
-        <div className="p-2.5 rounded-lg border border-slate-200 bg-white">
-          <div className="text-[11px] text-slate-500">Square Feet (वर्ग फिट)</div>
-          <div className="font-mono font-bold text-slate-900 mt-0.5 text-sm">
-            {results.sqFt.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
+        <div className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div className="text-[10px] text-slate-500 dark:text-slate-400">Square Feet</div>
+          <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-xs mt-0.5">
+            {sqFt.toLocaleString('en-US', { maximumFractionDigits: 2 })}
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">sq ft</div>
+          <div className="text-[9px] text-slate-400">sq ft</div>
         </div>
 
-        {/* Square Meters */}
-        <div className="p-2.5 rounded-lg border border-slate-200 bg-white">
-          <div className="text-[11px] text-slate-500">Square Meters (वर्ग मिटर)</div>
-          <div className="font-mono font-bold text-slate-900 mt-0.5 text-sm">
+        <div className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div className="text-[10px] text-slate-500 dark:text-slate-400">Square Meters</div>
+          <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-xs mt-0.5">
             {results.sqM.toLocaleString('en-US', { maximumFractionDigits: 2 })}
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">sq m</div>
+          <div className="text-[9px] text-slate-400">m²</div>
         </div>
 
-        {/* Acres */}
-        <div className="p-2.5 rounded-lg border border-slate-200 bg-white">
-          <div className="text-[11px] text-slate-500">Acres (एकर)</div>
-          <div className="font-mono font-bold text-slate-900 mt-0.5 text-sm">
+        <div className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div className="text-[10px] text-slate-500 dark:text-slate-400">Acres</div>
+          <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-xs mt-0.5">
             {results.acres.toFixed(4)}
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">ac</div>
+          <div className="text-[9px] text-slate-400">ac</div>
         </div>
 
-        {/* Hectares */}
-        <div className="p-2.5 rounded-lg border border-slate-200 bg-white">
-          <div className="text-[11px] text-slate-500">Hectares (हेक्टर)</div>
-          <div className="font-mono font-bold text-slate-900 mt-0.5 text-sm">
+        <div className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div className="text-[10px] text-slate-500 dark:text-slate-400">Hectares</div>
+          <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-xs mt-0.5">
             {results.hectares.toFixed(4)}
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">ha</div>
+          <div className="text-[9px] text-slate-400">ha</div>
+        </div>
+
+        <div className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div className="text-[10px] text-slate-500 dark:text-slate-400">Square Yards</div>
+          <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-xs mt-0.5">
+            {sqYd.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+          </div>
+          <div className="text-[9px] text-slate-400">sq yd</div>
+        </div>
+
+        <div className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div className="text-[10px] text-slate-500 dark:text-slate-400">Khetmuri</div>
+          <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-xs mt-0.5">
+            {khetmuri.toFixed(4)}
+          </div>
+          <div className="text-[9px] text-slate-400">25 Ropani</div>
+        </div>
+
+        <div className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div className="text-[10px] text-slate-500 dark:text-slate-400">Square Miles</div>
+          <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-xs mt-0.5">
+            {sqMi < 0.0001 && sqMi > 0 ? sqMi.toExponential(3) : sqMi.toFixed(6)}
+          </div>
+          <div className="text-[9px] text-slate-400">sq mi</div>
+        </div>
+
+        <div className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div className="text-[10px] text-slate-500 dark:text-slate-400">Square Kilometers</div>
+          <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-xs mt-0.5">
+            {sqKm < 0.0001 && sqKm > 0 ? sqKm.toExponential(3) : sqKm.toFixed(6)}
+          </div>
+          <div className="text-[9px] text-slate-400">km²</div>
         </div>
       </div>
     </div>

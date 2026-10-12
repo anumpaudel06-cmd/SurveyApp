@@ -288,13 +288,37 @@ export function geodesicPolygonAreaSqM(coords: GeoPoint[]): number {
 
 // ----------------- LENGTH & AREA CONVERTERS -----------------
 
-export type LengthUnit = 'feet' | 'meters' | 'inches' | 'yards' | 'hath' | 'gaj' | 'chains' | 'links';
+export const KHETMURI_SQFT = 25 * ROPANI_SQFT; // 136,900 sq ft
+export const SQYD_TO_SQFT = 9;
+export const SQMI_TO_SQFT = 27878400;
+export const SQKM_TO_SQFT = 10763910.41671;
+export const ARE_TO_SQFT = 1076.39104;
+export const CENT_TO_SQFT = 435.6; // 1/100 acre
+export const GUNTHA_TO_SQFT = 1089;
+
+export type LengthUnit =
+  | 'feet'
+  | 'meters'
+  | 'inches'
+  | 'yards'
+  | 'centimeters'
+  | 'millimeters'
+  | 'kilometers'
+  | 'miles'
+  | 'hath'
+  | 'gaj'
+  | 'chains'
+  | 'links';
 
 export const LENGTH_TO_METERS: Record<LengthUnit, number> = {
   meters: 1,
   feet: 0.3048,
   inches: 0.0254,
   yards: 0.9144,
+  centimeters: 0.01,
+  millimeters: 0.001,
+  kilometers: 1000,
+  miles: 1609.344,
   hath: 0.4572, // 1 Hath = 1.5 ft = 0.4572 m
   gaj: 0.9144,  // 1 Gaj = 3 ft = 0.9144 m
   chains: 20.1168, // 66 ft
@@ -315,9 +339,16 @@ export type AreaUnit =
   | 'aana'
   | 'paisa'
   | 'daam'
+  | 'khetmuri'
   | 'bigha'
   | 'kattha'
-  | 'dhur';
+  | 'dhur'
+  | 'sqyd'
+  | 'sqmi'
+  | 'sqkm'
+  | 'are'
+  | 'cent'
+  | 'guntha';
 
 export const AREA_TO_SQFT: Record<AreaUnit, number> = {
   sqft: 1,
@@ -328,9 +359,16 @@ export const AREA_TO_SQFT: Record<AreaUnit, number> = {
   aana: AANA_SQFT,
   paisa: PAISA_SQFT,
   daam: DAAM_SQFT,
+  khetmuri: KHETMURI_SQFT,
   bigha: BIGHA_SQFT,
   kattha: KATTHA_SQFT,
   dhur: DHUR_SQFT,
+  sqyd: SQYD_TO_SQFT,
+  sqmi: SQMI_TO_SQFT,
+  sqkm: SQKM_TO_SQFT,
+  are: ARE_TO_SQFT,
+  cent: CENT_TO_SQFT,
+  guntha: GUNTHA_TO_SQFT,
 };
 
 export function convertArea(value: number, from: AreaUnit, to: AreaUnit): number {

@@ -1,98 +1,85 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Point2D,
-  shoelaceArea,
-  polygonPerimeter,
+  triangleAreaHeron,
   getAllUnitsFromSqFt,
   generateDXF,
+  ROPANI_SQFT,
+  AANA_SQFT,
+  PAISA_SQFT,
+  DAAM_SQFT,
+  BIGHA_SQFT,
+  KATTHA_SQFT,
+  DHUR_SQFT,
 } from '../units';
-import { UnitResultsBadge } from '../components/UnitResultsBadge';
 import {
-  Undo,
   RotateCcw,
-  Save,
   Download,
-  Plus,
-  Trash2,
-  Building,
+  Copy,
   Check,
-  FolderOpen,
+  Info,
 } from 'lucide-react';
-
-interface SavedPlot {
-  id: string;
-  name: string;
-  date: string;
-  areaSqFt: number;
-  points: Point2D[];
-}
 
 export const PlotterScreen: React.FC = () => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [unit, setUnit] = useState<'ft' | 'm'>('ft');
-  const [plotName, setPlotName] = useState<string>('Parcel-1 (कित्ता १)');
 
-  // Input view mode: Canvas Interactive Tap vs Table Coordinates/Dimensions
-  const [viewMode, setViewMode] = useState<'canvas' | 'table'>('canvas');
-
-  // Boundary points (cadastral pegs)
+  // 4 points for the quadrilateral with diagonal
   const [points, setPoints] = useState<Point2D[]>([
-    { x: 80, y: 60 },
-    { x: 300, y: 60 },
-    { x: 340, y: 260 },
+    { x: 80, y: 70 },
+    { x: 290, y: 70 },
+    { x: 330, y: 260 },
     { x: 60, y: 240 },
   ]);
 
-  // Active dragging point index
   const [activeNode, setActiveNode] = useState<number | null>(null);
+  const [copied, setCopied] = useState<boolean>(false);
 
-  // Building overlay
-  const [showBuilding, setShowBuilding] = useState<boolean>(false);
-  const [buildingWidth, setBuildingWidth] = useState<number>(30); // in ft
-  const [buildingLength, setBuildingLength] = useState<number>(40); // in ft
-
-  // Saved plots
-  const [savedPlots, setSavedPlots] = useState<SavedPlot[]>([]);
-  const [showSavedList, setShowSavedList] = useState<boolean>(false);
-  const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
-
-  // Load saved plots from local storage
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('land_survey_pro_plots');
-      if (stored) setSavedPlots(JSON.parse(stored));
-    } catch (e) {}
-  }, []);
-
-  // Compute Area using Shoelace formula
-  const rawShoelaceArea = shoelaceArea(points);
-  const rawPerimeter = polygonPerimeter(points);
-  // Scale factor: 1 SVG pixel = 0.5 ft
+  // Scale: 1 SVG pixel = 0.5 feet
   const scaleFtPerPx = 0.5;
-  const areaSqFt =
-    unit === 'm'
-      ? rawShoelaceArea * scaleFtPerPx * scaleFtPerPx * 10.7639
-      : rawShoelaceArea * scaleFtPerPx * scaleFtPerPx;
-  const perimeterFt =
-    unit === 'm'
-      ? rawPerimeter * scaleFtPerPx * 3.28084
-      : rawPerimeter * scaleFtPerPx;
 
-  const results = getAllUnitsFromSqFt(areaSqFt);
-
-  // Tap on canvas to add a new corner peg
-  const handleSvgClick = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (activeNode !== null || !svgRef.current) return;
-    const rect = svgRef.current.getBoundingClientRect();
-    const x = Math.round(e.clientX - rect.left);
-    const y = Math.round(e.clientY - rect.top);
-
-    if (x >= 15 && x <= rect.width - 15 && y >= 15 && y <= rect.height - 15) {
-      setPoints([...points, { x, y }]);
-    }
+  // Calculate distance in feet between two points
+  const distFt = (p1: Point2D, p2: Point2D): number => {
+    const dx = (p2.x - p1.x) * scaleFtPerPx;
+    const dy = (p2.y - p1.y) * scaleFtPerPx;
+    return Math.sqrt(dx * dx + dy * dy);
   };
 
-  // Node Dragging Handling
+  // Edge lengths (in feet)
+  const side1 = distFt(points[0], points[1]); // P1 - P2
+  const side2 = distFt(points[1], points[2]); // P2 - P3
+  const side3 = distFt(points[2], points[3]); // P3 - P4
+  const side4 = distFt(points[3], points[0]); // P4 - P1
+  const diagonal = distFt(points[0], points[2]); // P1 - P3 diagonal
+
+  // Area via Triangle Decomposition (Heron's Formula on T1 & T2)
+  // Triangle 1: P1, P2, P3 (sides: side1, side2, diagonal)
+  const t1Area = triangleAreaHeron(side1, side2, diagonal);
+  // Triangle 2: P1, P3, P4 (sides: diagonal, side3, side4)
+  const t2Area = triangleAreaHeron(diagonal, side3, side4);
+  const totalAreaSqFt = t1Area + t2Area;
+  const totalAreaSqM = totalAreaSqFt * 0.092903;
+  const acre = totalAreaSqFt / 43560;
+  const hectare = totalAreaSqFt / 107639;
+
+  // Exact Ropani-Aana-Paisa-Daam formatting
+  const ropani = Math.floor(totalAreaSqFt / ROPANI_SQFT);
+  let remR = totalAreaSqFt % ROPANI_SQFT;
+  const aana = Math.floor(remR / AANA_SQFT);
+  remR = remR % AANA_SQFT;
+  const paisa = Math.floor(remR / PAISA_SQFT);
+  remR = remR % PAISA_SQFT;
+  const daam = (remR / DAAM_SQFT).toFixed(2);
+  const ropaniFormatted = `${ropani}-${aana}-${paisa}-${daam}`;
+
+  // Exact Bigha-Kattha-Dhur formatting
+  const bigha = Math.floor(totalAreaSqFt / BIGHA_SQFT);
+  let remB = totalAreaSqFt % BIGHA_SQFT;
+  const kattha = Math.floor(remB / KATTHA_SQFT);
+  remB = remB % KATTHA_SQFT;
+  const dhur = (remB / DHUR_SQFT).toFixed(4);
+  const bighaFormatted = `${bigha}-${kattha}-${dhur}`;
+
+  // Dragging vertex points
   const handlePointerDown = (idx: number, e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
     setActiveNode(idx);
@@ -118,474 +105,406 @@ export const PlotterScreen: React.FC = () => {
     setActiveNode(null);
   };
 
-  const handleUndo = () => {
-    if (points.length > 3) {
-      setPoints(points.slice(0, -1));
-    }
+  const handleCanvasClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (activeNode !== null || !svgRef.current) return;
+    // If user clicks, move the closest vertex to the tapped position
+    const rect = svgRef.current.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
+    let closestIdx = 0;
+    let minDist = Infinity;
+    points.forEach((p, idx) => {
+      const d = Math.hypot(p.x - clickX, p.y - clickY);
+      if (d < minDist) {
+        minDist = d;
+        closestIdx = idx;
+      }
+    });
+
+    setPoints((prev) => {
+      const next = [...prev];
+      next[closestIdx] = { x: Math.round(clickX), y: Math.round(clickY) };
+      return next;
+    });
   };
 
-  const handleReset = () => {
+  const handleResetPoints = () => {
     setPoints([
-      { x: 80, y: 60 },
-      { x: 300, y: 60 },
-      { x: 340, y: 260 },
+      { x: 80, y: 70 },
+      { x: 290, y: 70 },
+      { x: 330, y: 260 },
       { x: 60, y: 240 },
     ]);
   };
 
-  const handleSavePlot = () => {
-    const newPlot: SavedPlot = {
-      id: String(Date.now()),
-      name: plotName.trim() || `Plot ${savedPlots.length + 1}`,
-      date: new Date().toLocaleDateString(),
-      areaSqFt,
-      points,
-    };
-    const updated = [newPlot, ...savedPlots];
-    setSavedPlots(updated);
-    try {
-      localStorage.setItem('land_survey_pro_plots', JSON.stringify(updated));
-    } catch (e) {}
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 2000);
-  };
-
-  const handleDownloadDXF = () => {
+  const handleExportDXF = () => {
     const dxfString = generateDXF(
       points.map((p) => ({ x: p.x * scaleFtPerPx, y: p.y * scaleFtPerPx })),
-      plotName
+      'QUADRILATERAL_PARCEL'
     );
     const blob = new Blob([dxfString], { type: 'application/dxf' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${plotName.replace(/\s+/g, '_')}.dxf`;
+    a.download = `parcel_quadrilateral.dxf`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const handleDownloadSVG = () => {
-    if (!svgRef.current) return;
-    const svgData = new XMLSerializer().serializeToString(svgRef.current);
-    const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${plotName.replace(/\s+/g, '_')}.svg`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleCopyResults = () => {
+    const text = `Land Calculator - Quadrilateral Parcel:
+• Side 1 (P1-P2): ${side1.toFixed(2)} ft
+• Side 2 (P2-P3): ${side2.toFixed(2)} ft
+• Side 3 (P3-P4): ${side3.toFixed(2)} ft
+• Side 4 (P4-P1): ${side4.toFixed(2)} ft
+• Diagonal (P1-P3): ${diagonal.toFixed(2)} ft
+• Triangle 1 Area: ${t1Area.toFixed(2)} sq ft
+• Triangle 2 Area: ${t2Area.toFixed(2)} sq ft
+• TOTAL AREA: ${totalAreaSqFt.toFixed(2)} sq ft (${totalAreaSqM.toFixed(2)} m²)
+• Acre: ${acre.toFixed(4)} ac
+• Hectare: ${hectare.toFixed(4)} ha
+• Ropani-Aana-Paisa-Daam: ${ropaniFormatted}
+• Bigha-Kattha-Dhur: ${bighaFormatted}`;
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
+
+  // Helper for red side length label position
+  const getMidpoint = (p1: Point2D, p2: Point2D) => ({
+    x: (p1.x + p2.x) / 2,
+    y: (p1.y + p2.y) / 2,
+  });
+
+  const mid1 = getMidpoint(points[0], points[1]);
+  const mid2 = getMidpoint(points[1], points[2]);
+  const mid3 = getMidpoint(points[2], points[3]);
+  const mid4 = getMidpoint(points[3], points[0]);
+  const midDiag = getMidpoint(points[0], points[2]);
 
   return (
     <div className="space-y-3 pb-8 max-w-xl mx-auto">
-      {/* 1. Header Toolbar */}
-      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            value={plotName}
-            onChange={(e) => setPlotName(e.target.value)}
-            className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded px-2.5 py-1 focus:bg-white outline-none w-44"
-          />
+      {/* Top Header Card */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-xs flex items-center justify-between">
+        <div>
+          <span className="font-mono font-bold text-xs text-blue-600 dark:text-blue-400 block">
+            *Unit = feet
+          </span>
+          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+            Quadrilateral Plotter & Triangle Decomposition
+          </span>
         </div>
 
         <div className="flex items-center gap-1.5">
-          {/* Unit Toggle */}
-          <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs font-medium">
-            <button
-              onClick={() => setUnit('ft')}
-              className={`px-2.5 py-0.5 rounded ${unit === 'ft' ? 'bg-white text-slate-900 font-semibold shadow-xs' : 'text-slate-600'}`}
-            >
-              Feet (फिट)
-            </button>
-            <button
-              onClick={() => setUnit('m')}
-              className={`px-2.5 py-0.5 rounded ${unit === 'm' ? 'bg-white text-slate-900 font-semibold shadow-xs' : 'text-slate-600'}`}
-            >
-              Meter (मिटर)
-            </button>
-          </div>
-
           <button
-            onClick={() => setShowSavedList(!showSavedList)}
-            className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs flex items-center gap-1"
-            title="Saved Plots (सुरक्षित प्लटहरू)"
+            onClick={handleResetPoints}
+            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors"
+            title="Reset Corners"
           >
-            <FolderOpen className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Plots ({savedPlots.length})</span>
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={handleExportDXF}
+            className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium flex items-center gap-1"
+          >
+            <Download className="w-3 h-3" />
+            <span>DXF</span>
+          </button>
+          <button
+            onClick={handleCopyResults}
+            className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-medium flex items-center gap-1 transition-colors"
+          >
+            {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+            <span>{copied ? 'Copied' : 'Copy'}</span>
           </button>
         </div>
       </div>
 
-      {/* Saved Plots Drawer */}
-      {showSavedList && (
-        <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs space-y-2">
-          <div className="flex items-center justify-between pb-1 border-b border-slate-100 text-xs font-semibold text-slate-800">
-            <span>Saved Land Plots (सुरक्षित गरिएका प्लटहरू)</span>
-            <button
-              onClick={() => setShowSavedList(false)}
-              className="text-[11px] text-slate-500 hover:text-slate-800"
-            >
-              Close (बन्द)
-            </button>
-          </div>
-
-          {savedPlots.length === 0 ? (
-            <div className="text-[11px] text-slate-500 py-2 text-center">
-              No saved plots yet. Draw a plot and click "Save Plot".
-            </div>
-          ) : (
-            <div className="space-y-1.5 max-h-48 overflow-y-auto">
-              {savedPlots.map((sp) => (
-                <div
-                  key={sp.id}
-                  className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200/80 text-xs"
-                >
-                  <div>
-                    <span className="font-semibold text-slate-900">{sp.name}</span>
-                    <span className="text-[10px] text-slate-500 ml-2">
-                      {sp.areaSqFt.toFixed(1)} sq ft · {sp.points.length} corners
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setPoints(sp.points);
-                        setPlotName(sp.name);
-                        setShowSavedList(false);
-                      }}
-                      className="text-slate-800 hover:underline font-medium text-[11px]"
-                    >
-                      Load (खोल्नुहोस्)
-                    </button>
-                    <button
-                      onClick={() => {
-                        const updated = savedPlots.filter((p) => p.id !== sp.id);
-                        setSavedPlots(updated);
-                        localStorage.setItem('land_survey_pro_plots', JSON.stringify(updated));
-                      }}
-                      className="text-slate-400 hover:text-rose-600"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+      {/* Interactive Canvas */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-xs space-y-2">
+        <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+          <span>Drag the blue corner dots or tap to reshape the quadrilateral.</span>
+          <span className="font-mono text-blue-600 font-semibold">T1 + T2 Decomposition</span>
         </div>
-      )}
 
-      {/* 2. Mode Toggle: Interactive Canvas vs Coordinate Table */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => setViewMode('canvas')}
-          className={`flex-1 py-1.5 text-xs rounded-lg border font-medium transition-colors ${
-            viewMode === 'canvas'
-              ? 'bg-slate-900 text-white border-slate-900'
-              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-          }`}
-        >
-          Cadastral Canvas (नक्सा ग्राफ)
-        </button>
-        <button
-          onClick={() => setViewMode('table')}
-          className={`flex-1 py-1.5 text-xs rounded-lg border font-medium transition-colors ${
-            viewMode === 'table'
-              ? 'bg-slate-900 text-white border-slate-900'
-              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-          }`}
-        >
-          Corner Coordinates & Dimensions (कुना नाप तालिका)
-        </button>
-      </div>
+        {/* Canvas area */}
+        <div className="relative w-full h-72 sm:h-80 bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden select-none touch-none">
+          <svg
+            ref={svgRef}
+            className="w-full h-full cursor-crosshair"
+            onClick={handleCanvasClick}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerUp}
+          >
+            {/* Subtle grid pattern */}
+            <defs>
+              <pattern id="quadGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" strokeWidth="0.8" opacity="0.6" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#quadGrid)" />
 
-      {/* 3. MAIN CAD CANVAS */}
-      {viewMode === 'canvas' ? (
-        <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs space-y-2">
-          {/* Canvas Sub-toolbar */}
-          <div className="flex items-center justify-between text-xs pb-1.5 border-b border-slate-100">
-            <span className="text-[11px] text-slate-500 font-medium">
-              Tap canvas to add peg (छोएर कुना थप्नुहोस्) · Drag to move
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={handleUndo}
-                disabled={points.length <= 3}
-                className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 text-[11px] flex items-center gap-1 font-medium"
-              >
-                <Undo className="w-3 h-3" /> Undo (पछाडि)
-              </button>
-              <button
-                onClick={handleReset}
-                className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] flex items-center gap-1 font-medium"
-              >
-                <RotateCcw className="w-3 h-3" /> Reset (रिसेट)
-              </button>
-            </div>
-          </div>
+            {/* Triangle 1 Fill (P1-P2-P3) */}
+            <polygon
+              points={`${points[0].x},${points[0].y} ${points[1].x},${points[1].y} ${points[2].x},${points[2].y}`}
+              fill="rgba(37, 99, 235, 0.06)"
+            />
 
-          {/* SVG Plotting Paper */}
-          <div className="relative w-full h-72 sm:h-80 bg-slate-50/70 border border-slate-200 rounded-lg overflow-hidden select-none touch-none">
-            {/* Subtle background cadastral grid */}
-            <svg
-              ref={svgRef}
-              className="w-full h-full cursor-crosshair"
-              onClick={handleSvgClick}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerLeave={handlePointerUp}
+            {/* Triangle 2 Fill (P1-P3-P4) */}
+            <polygon
+              points={`${points[0].x},${points[0].y} ${points[2].x},${points[2].y} ${points[3].x},${points[3].y}`}
+              fill="rgba(37, 99, 235, 0.03)"
+            />
+
+            {/* 4 Outer Blue Boundary Edges */}
+            <line
+              x1={points[0].x}
+              y1={points[0].y}
+              x2={points[1].x}
+              y2={points[1].y}
+              stroke="#2563eb"
+              strokeWidth="2.5"
+            />
+            <line
+              x1={points[1].x}
+              y1={points[1].y}
+              x2={points[2].x}
+              y2={points[2].y}
+              stroke="#2563eb"
+              strokeWidth="2.5"
+            />
+            <line
+              x1={points[2].x}
+              y1={points[2].y}
+              x2={points[3].x}
+              y2={points[3].y}
+              stroke="#2563eb"
+              strokeWidth="2.5"
+            />
+            <line
+              x1={points[3].x}
+              y1={points[3].y}
+              x2={points[0].x}
+              y2={points[0].y}
+              stroke="#2563eb"
+              strokeWidth="2.5"
+            />
+
+            {/* Diagonal Line (P1 to P3 in Blue) */}
+            <line
+              x1={points[0].x}
+              y1={points[0].y}
+              x2={points[2].x}
+              y2={points[2].y}
+              stroke="#2563eb"
+              strokeWidth="1.8"
+              strokeDasharray="4 4"
+            />
+
+            {/* Triangle Label Indicators */}
+            <text
+              x={(points[0].x + points[1].x + points[2].x) / 3}
+              y={(points[0].y + points[1].y + points[2].y) / 3}
+              textAnchor="middle"
+              fontSize="10"
+              fontWeight="bold"
+              fill="#3b82f6"
+              fontFamily="sans-serif"
             >
-              {/* Grid pattern */}
-              <defs>
-                <pattern id="cadGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" strokeWidth="0.8" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#cadGrid)" />
+              Triangle 1 ({t1Area.toFixed(1)} sq ft)
+            </text>
 
-              {/* Polygon fill & stroke */}
-              {points.length >= 3 && (
-                <polygon
-                  points={points.map((p) => `${p.x},${p.y}`).join(' ')}
-                  fill="rgba(51, 65, 85, 0.08)"
-                  stroke="#1e293b"
+            <text
+              x={(points[0].x + points[2].x + points[3].x) / 3}
+              y={(points[0].y + points[2].y + points[3].y) / 3}
+              textAnchor="middle"
+              fontSize="10"
+              fontWeight="bold"
+              fill="#3b82f6"
+              fontFamily="sans-serif"
+            >
+              Triangle 2 ({t2Area.toFixed(1)} sq ft)
+            </text>
+
+            {/* RED LABELS FOR SIDE LENGTHS */}
+            {/* Edge 1 (P1-P2) */}
+            <g>
+              <rect x={mid1.x - 22} y={mid1.y - 14} width="44" height="15" rx="3" fill="#ffffff" stroke="#fca5a5" strokeWidth="1" />
+              <text x={mid1.x} y={mid1.y - 3} textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#dc2626" fontFamily="monospace">
+                {side1.toFixed(1)} ft
+              </text>
+            </g>
+
+            {/* Edge 2 (P2-P3) */}
+            <g>
+              <rect x={mid2.x + 6} y={mid2.y - 8} width="44" height="15" rx="3" fill="#ffffff" stroke="#fca5a5" strokeWidth="1" />
+              <text x={mid2.x + 28} y={mid2.y + 3} textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#dc2626" fontFamily="monospace">
+                {side2.toFixed(1)} ft
+              </text>
+            </g>
+
+            {/* Edge 3 (P3-P4) */}
+            <g>
+              <rect x={mid3.x - 22} y={mid3.y + 3} width="44" height="15" rx="3" fill="#ffffff" stroke="#fca5a5" strokeWidth="1" />
+              <text x={mid3.x} y={mid3.y + 14} textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#dc2626" fontFamily="monospace">
+                {side3.toFixed(1)} ft
+              </text>
+            </g>
+
+            {/* Edge 4 (P4-P1) */}
+            <g>
+              <rect x={mid4.x - 48} y={mid4.y - 8} width="44" height="15" rx="3" fill="#ffffff" stroke="#fca5a5" strokeWidth="1" />
+              <text x={mid4.x - 26} y={mid4.y + 3} textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#dc2626" fontFamily="monospace">
+                {side4.toFixed(1)} ft
+              </text>
+            </g>
+
+            {/* Diagonal (P1-P3) RED LABEL */}
+            <g>
+              <rect x={midDiag.x - 24} y={midDiag.y - 8} width="48" height="15" rx="3" fill="#ffffff" stroke="#fca5a5" strokeWidth="1" />
+              <text x={midDiag.x} y={midDiag.y + 3} textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#dc2626" fontFamily="monospace">
+                {diagonal.toFixed(1)} ft
+              </text>
+            </g>
+
+            {/* 4 Blue Dots for Vertices */}
+            {points.map((p, idx) => (
+              <g
+                key={`vertex-${idx}`}
+                onPointerDown={(e) => handlePointerDown(idx, e)}
+                className="cursor-move"
+              >
+                {/* Hitbox */}
+                <circle cx={p.x} cy={p.y} r="18" fill="transparent" />
+                {/* Blue Dot Vertex */}
+                <circle
+                  cx={p.x}
+                  cy={p.y}
+                  r={activeNode === idx ? '8' : '6.5'}
+                  fill="#2563eb"
+                  stroke="#ffffff"
                   strokeWidth="2"
-                  strokeDasharray="none"
                 />
-              )}
-
-              {/* Edge Length Labels */}
-              {points.map((p, idx) => {
-                const nextP = points[(idx + 1) % points.length];
-                const midX = (p.x + nextP.x) / 2;
-                const midY = (p.y + nextP.y) / 2;
-                const dx = nextP.x - p.x;
-                const dy = nextP.y - p.y;
-                const distPx = Math.sqrt(dx * dx + dy * dy);
-                const distVal = unit === 'm' ? (distPx * scaleFtPerPx * 0.3048).toFixed(1) : (distPx * scaleFtPerPx).toFixed(1);
-
-                return (
-                  <g key={`edge-${idx}`}>
-                    <rect
-                      x={midX - 16}
-                      y={midY - 8}
-                      width="32"
-                      height="16"
-                      rx="3"
-                      fill="#ffffff"
-                      stroke="#cbd5e1"
-                      strokeWidth="1"
-                    />
-                    <text
-                      x={midX}
-                      y={midY + 3.5}
-                      textAnchor="middle"
-                      fontSize="9"
-                      fontWeight="600"
-                      fill="#334155"
-                      fontFamily="monospace"
-                    >
-                      {distVal}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* Building Footprint Overlay */}
-              {showBuilding && points.length >= 3 && (
-                <g>
-                  {/* Building rectangle centered at canvas center */}
-                  <rect
-                    x="150"
-                    y="130"
-                    width={buildingLength * (1 / scaleFtPerPx) * 0.4}
-                    height={buildingWidth * (1 / scaleFtPerPx) * 0.4}
-                    fill="rgba(244, 63, 94, 0.15)"
-                    stroke="#e11d48"
-                    strokeWidth="1.5"
-                    strokeDasharray="3 3"
-                    rx="2"
-                  />
-                  <text
-                    x="155"
-                    y="145"
-                    fontSize="9"
-                    fontWeight="bold"
-                    fill="#be123c"
-                  >
-                    House (घर)
-                  </text>
-                </g>
-              )}
-
-              {/* Corner Pegs (P1, P2, P3...) */}
-              {points.map((p, idx) => (
-                <g
-                  key={`node-${idx}`}
-                  onPointerDown={(e) => handlePointerDown(idx, e)}
-                  className="cursor-move"
+                <text
+                  x={p.x + (idx === 1 || idx === 2 ? 10 : -16)}
+                  y={p.y + (idx === 0 || idx === 1 ? -10 : 16)}
+                  fontSize="11"
+                  fontWeight="bold"
+                  fill="#1e40af"
+                  fontFamily="monospace"
                 >
-                  {/* Outer touch hitbox */}
-                  <circle cx={p.x} cy={p.y} r="16" fill="transparent" />
-                  {/* Visible point circle */}
-                  <circle
-                    cx={p.x}
-                    cy={p.y}
-                    r={activeNode === idx ? '8' : '6'}
-                    fill="#0f172a"
-                    stroke="#ffffff"
-                    strokeWidth="2"
-                  />
-                  {/* Point Label */}
-                  <text
-                    x={p.x + 9}
-                    y={p.y - 7}
-                    fontSize="10"
-                    fontWeight="bold"
-                    fill="#0f172a"
-                    fontFamily="monospace"
-                  >
-                    P{idx + 1}
-                  </text>
-                </g>
-              ))}
-            </svg>
-          </div>
-
-          {/* Quick Metrics Strip */}
-          <div className="flex items-center justify-between text-xs bg-slate-50 p-2 rounded-lg border border-slate-200 font-mono">
-            <span>Corners: {points.length} Pegs</span>
-            <span>Perimeter: {perimeterFt.toFixed(1)} {unit}</span>
-            <span className="font-bold text-slate-900">
-              Shoelace Area: {areaSqFt.toFixed(1)} sq ft
-            </span>
-          </div>
-
-          {/* Building Footprint Toggle */}
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-1.5 text-slate-700">
-              <Building className="w-3.5 h-3.5" />
-              <span>Overlay Building Footprint (घरको नक्सा देखाउने)</span>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showBuilding}
-                onChange={(e) => setShowBuilding(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-slate-900"></div>
-            </label>
-          </div>
+                  P{idx + 1}
+                </text>
+              </g>
+            ))}
+          </svg>
         </div>
-      ) : (
-        /* TABLE VIEW FOR EXACT NUMERIC INPUT */
-        <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-xs space-y-3">
-          <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
-            <span className="text-xs font-semibold text-slate-800">
-              Corner Pegs Coordinate Table (कुना बिन्दु तालिका)
-            </span>
-            <button
-              onClick={() => {
-                const last = points[points.length - 1];
-                setPoints([...points, { x: last.x + 30, y: last.y + 30 }]);
-              }}
-              className="px-2 py-1 rounded bg-slate-900 text-white text-xs font-medium flex items-center gap-1"
-            >
-              <Plus className="w-3.5 h-3.5" /> Add Peg (कुना थप्नुहोस्)
-            </button>
+
+        {/* Side lengths summary strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 text-xs font-mono pt-1">
+          <div className="p-1.5 rounded bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <span className="text-[10px] text-slate-500 block">Side 1 (P1-P2)</span>
+            <span className="font-bold text-red-600">{side1.toFixed(2)} ft</span>
           </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border border-slate-200">
-              <thead className="bg-slate-50 text-slate-600 font-medium">
-                <tr>
-                  <th className="p-2">Peg (कुना)</th>
-                  <th className="p-2">X Coordinate</th>
-                  <th className="p-2">Y Coordinate</th>
-                  <th className="p-2 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-mono">
-                {points.map((p, idx) => (
-                  <tr key={idx}>
-                    <td className="p-2 font-bold font-sans">P{idx + 1}</td>
-                    <td className="p-1.5">
-                      <input
-                        type="number"
-                        value={p.x}
-                        onChange={(e) => {
-                          const next = [...points];
-                          next[idx].x = parseFloat(e.target.value) || 0;
-                          setPoints(next);
-                        }}
-                        className="w-20 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs"
-                      />
-                    </td>
-                    <td className="p-1.5">
-                      <input
-                        type="number"
-                        value={p.y}
-                        onChange={(e) => {
-                          const next = [...points];
-                          next[idx].y = parseFloat(e.target.value) || 0;
-                          setPoints(next);
-                        }}
-                        className="w-20 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs"
-                      />
-                    </td>
-                    <td className="p-2 text-right">
-                      {points.length > 3 && (
-                        <button
-                          onClick={() => setPoints(points.filter((_, i) => i !== idx))}
-                          className="text-slate-400 hover:text-rose-600"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="p-1.5 rounded bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <span className="text-[10px] text-slate-500 block">Side 2 (P2-P3)</span>
+            <span className="font-bold text-red-600">{side2.toFixed(2)} ft</span>
           </div>
-        </div>
-      )}
-
-      {/* 4. Export & Save Actions Bar */}
-      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs flex flex-wrap items-center justify-between gap-2 text-xs font-medium">
-        <button
-          onClick={handleSavePlot}
-          className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-1.5 transition-colors"
-        >
-          {saveSuccess ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Save className="w-3.5 h-3.5" />}
-          <span>{saveSuccess ? 'Saved (सुरक्षित भयो)' : 'Save Plot (सुरक्षित गर्नुहोस्)'}</span>
-        </button>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleDownloadDXF}
-            className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 flex items-center gap-1 transition-colors"
-            title="Export standard AutoCAD DXF"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>AutoCAD DXF</span>
-          </button>
-
-          <button
-            onClick={handleDownloadSVG}
-            className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 flex items-center gap-1 transition-colors"
-            title="Export vector image"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Image SVG</span>
-          </button>
+          <div className="p-1.5 rounded bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <span className="text-[10px] text-slate-500 block">Side 3 (P3-P4)</span>
+            <span className="font-bold text-red-600">{side3.toFixed(2)} ft</span>
+          </div>
+          <div className="p-1.5 rounded bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <span className="text-[10px] text-slate-500 block">Side 4 (P4-P1)</span>
+            <span className="font-bold text-red-600">{side4.toFixed(2)} ft</span>
+          </div>
+          <div className="p-1.5 rounded bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 col-span-2 sm:col-span-1">
+            <span className="text-[10px] text-slate-500 block">Diagonal (P1-P3)</span>
+            <span className="font-bold text-red-600">{diagonal.toFixed(2)} ft</span>
+          </div>
         </div>
       </div>
 
-      {/* 5. Live Area Results Badge */}
-      <UnitResultsBadge results={results} title="Shoelace Polygon Area (प्लटर क्षेत्रफल)" />
+      {/* DISPLAY AREA IN ALL UNITS AT THE BOTTOM */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xs space-y-3">
+        <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 dark:border-slate-800">
+          <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+            Calculated Quadrilateral Parcel Area
+          </span>
+          <span className="text-[11px] font-mono font-bold text-blue-600 dark:text-blue-400">
+            Triangle 1 + Triangle 2
+          </span>
+        </div>
+
+        {/* 1. Square Feet & Square Meter Main Badges */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Square Feet</span>
+            <div className="text-lg font-mono font-bold text-slate-900 dark:text-slate-100">
+              {totalAreaSqFt.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+            </div>
+            <span className="text-[10px] text-slate-400">sq ft</span>
+          </div>
+
+          <div className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Square Meters</span>
+            <div className="text-lg font-mono font-bold text-slate-900 dark:text-slate-100">
+              {totalAreaSqM.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+            </div>
+            <span className="text-[10px] text-slate-400">m²</span>
+          </div>
+        </div>
+
+        {/* 2. Acre & Hectare */}
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Acre</span>
+            <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-sm">
+              {acre.toFixed(4)}
+            </div>
+            <span className="text-[9px] text-slate-400">43,560 sq ft / acre</span>
+          </div>
+
+          <div className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Hectare</span>
+            <div className="font-mono font-bold text-slate-900 dark:text-slate-100 text-sm">
+              {hectare.toFixed(4)}
+            </div>
+            <span className="text-[9px] text-slate-400">107,639 sq ft / ha</span>
+          </div>
+        </div>
+
+        {/* 3. Nepali Units: Ropani-Aana-Paisa-Daam & Bigha-Kattha-Dhur */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+          {/* Ropani-Aana-Paisa-Daam */}
+          <div className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">
+              Ropani-Aana-Paisa-Daam
+            </span>
+            <div className="text-base font-mono font-bold text-slate-900 dark:text-slate-100 mt-0.5">
+              {ropaniFormatted}
+            </div>
+            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+              {ropani} Ropani, {aana} Aana, {paisa} Paisa, {daam} Daam
+            </div>
+          </div>
+
+          {/* Bigha-Kattha-Dhur */}
+          <div className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">
+              Bigha-Kattha-Dhur
+            </span>
+            <div className="text-base font-mono font-bold text-slate-900 dark:text-slate-100 mt-0.5">
+              {bighaFormatted}
+            </div>
+            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+              {bigha} Bigha, {kattha} Kattha, {dhur} Dhur
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
