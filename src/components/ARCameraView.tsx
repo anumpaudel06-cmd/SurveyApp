@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Camera, RefreshCw, Eye, ShieldAlert, Crosshair, ArrowUp, Compass } from 'lucide-react';
+import { Camera, ArrowUp } from 'lucide-react';
 
 interface ARCameraViewProps {
   onClose?: () => void;
@@ -17,10 +17,7 @@ export const ARCameraView: React.FC<ARCameraViewProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hasCamera, setHasCamera] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [deviceHeading, setDeviceHeading] = useState<number>(45);
-  const [devicePitch, setDevicePitch] = useState<number>(0);
 
-  // Initialize camera stream
   useEffect(() => {
     let stream: MediaStream | null = null;
     const startCam = async () => {
@@ -35,25 +32,16 @@ export const ARCameraView: React.FC<ARCameraViewProps> = ({
             setHasCamera(true);
           }
         } else {
-          setCameraError('Camera API not accessible in this environment. AR Simulation active.');
+          setCameraError('Camera API not supported in current context.');
         }
       } catch (err: any) {
-        setCameraError(err?.message || 'Camera permission denied. Using high-fidelity survey simulation.');
+        setCameraError('Camera inactive. Simulation viewfinder enabled.');
       }
     };
 
     startCam();
 
-    // Listen to orientation if available
-    const handleOrientation = (e: DeviceOrientationEvent) => {
-      if (e.alpha !== null) setDeviceHeading(e.alpha);
-      if (e.beta !== null) setDevicePitch(e.beta - 90);
-    };
-
-    window.addEventListener('deviceorientation', handleOrientation);
-
     return () => {
-      window.removeEventListener('deviceorientation', handleOrientation);
       if (stream) {
         stream.getTracks().forEach((track) => track.stop());
       }
@@ -61,8 +49,7 @@ export const ARCameraView: React.FC<ARCameraViewProps> = ({
   }, []);
 
   return (
-    <div className="relative w-full h-[450px] bg-black rounded-2xl overflow-hidden border border-slate-700 shadow-2xl flex flex-col justify-between">
-      {/* Real Video or Simulated AR Background */}
+    <div className="relative w-full h-[420px] bg-zinc-950 rounded-xl overflow-hidden border border-zinc-800 shadow-sm flex flex-col justify-between">
       {hasCamera ? (
         <video
           ref={videoRef}
@@ -72,45 +59,28 @@ export const ARCameraView: React.FC<ARCameraViewProps> = ({
           className="absolute inset-0 w-full h-full object-cover"
         />
       ) : (
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-emerald-950/20 to-slate-950 flex items-center justify-center">
-          {/* Simulated 3D Ground Mesh */}
-          <div
-            className="absolute inset-0 opacity-20"
-            style={{
-              backgroundImage:
-                'linear-gradient(to right, #059669 1px, transparent 1px), linear-gradient(to bottom, #059669 1px, transparent 1px)',
-              backgroundSize: '40px 40px',
-              perspective: '600px',
-              transform: 'rotateX(60deg)',
-              transformOrigin: 'bottom',
-            }}
-          />
-          <div className="text-center p-6 text-slate-400 z-10 max-w-sm">
-            <Camera className="w-10 h-10 mx-auto text-emerald-400 mb-2 animate-pulse" />
-            <div className="text-xs font-semibold text-slate-300">AR Boundary Camera Mode</div>
-            <div className="text-[11px] text-slate-500 mt-1">
-              {cameraError || 'Align surveyor target pin through live optical viewfinder'}
-            </div>
+        <div className="absolute inset-0 bg-zinc-950 flex flex-col items-center justify-center p-6 text-zinc-500 text-center">
+          <Camera className="w-8 h-8 text-zinc-400 mb-2" />
+          <div className="text-xs font-medium text-zinc-300">AR Camera Viewfinder</div>
+          <div className="text-[11px] text-zinc-600 mt-1">
+            {cameraError || 'Align surveyor target pin with crosshair'}
           </div>
         </div>
       )}
 
-      {/* AR HUD Overlay: Top Bar */}
-      <div className="relative z-10 p-4 bg-gradient-to-b from-black/80 to-transparent flex items-center justify-between text-white">
+      {/* Top Bar */}
+      <div className="relative z-10 p-3 bg-zinc-950/80 border-b border-zinc-800/60 flex items-center justify-between text-zinc-200">
         <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-          <span className="text-xs font-bold tracking-wide uppercase text-emerald-400 font-mono">
-            AR Boundary Locked
-          </span>
+          <span className="text-xs font-medium">AR Stakeout View</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-mono bg-black/60 px-2 py-0.5 rounded border border-white/20">
+          <span className="text-[11px] font-mono bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800 text-zinc-300">
             Azimuth {bearingDeg.toFixed(1)}°
           </span>
           {onClose && (
             <button
               onClick={onClose}
-              className="text-xs bg-slate-800/80 hover:bg-slate-700 px-2.5 py-1 rounded-lg border border-slate-600 text-slate-200"
+              className="text-xs bg-zinc-800 hover:bg-zinc-700 px-2 py-0.5 rounded text-zinc-300"
             >
               Close
             </button>
@@ -118,45 +88,29 @@ export const ARCameraView: React.FC<ARCameraViewProps> = ({
         </div>
       </div>
 
-      {/* Center AR Crosshair & Projected Peg */}
+      {/* Crosshair */}
       <div className="relative z-10 self-center flex flex-col items-center pointer-events-none">
-        {/* Optical Crosshair */}
-        <div className="relative w-28 h-28 border border-emerald-400/50 rounded-full flex items-center justify-center">
-          <div className="w-1 h-3 bg-emerald-400 absolute top-0 -translate-y-1/2" />
-          <div className="w-1 h-3 bg-emerald-400 absolute bottom-0 translate-y-1/2" />
-          <div className="h-1 w-3 bg-emerald-400 absolute left-0 -translate-x-1/2" />
-          <div className="h-1 w-3 bg-emerald-400 absolute right-0 translate-x-1/2" />
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        <div className="relative w-24 h-24 border border-zinc-500/60 rounded-full flex items-center justify-center">
+          <div className="w-px h-6 bg-zinc-400 absolute top-0" />
+          <div className="w-px h-6 bg-zinc-400 absolute bottom-0" />
+          <div className="h-px w-6 bg-zinc-400 absolute left-0" />
+          <div className="h-px w-6 bg-zinc-400 absolute right-0" />
+          <div className="w-1.5 h-1.5 rounded-full bg-zinc-200" />
         </div>
 
-        {/* Floating 3D Stakeout Pin Billboard in AR */}
-        <div className="mt-4 bg-emerald-950/90 border border-emerald-400/80 px-3 py-1.5 rounded-xl shadow-2xl backdrop-blur-md text-center animate-bounce">
-          <div className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">
-            {targetPointName}
-          </div>
-          <div className="text-lg font-mono font-black text-white">
-            {distanceMeters.toFixed(2)} m
-          </div>
-          <div className="text-[9px] text-emerald-300">
-            ΔE: +1.24m | ΔN: +8.32m
-          </div>
+        <div className="mt-3 bg-zinc-900/90 border border-zinc-700 px-3 py-1.5 rounded-lg text-center">
+          <div className="text-[10px] text-zinc-400 font-medium">{targetPointName}</div>
+          <div className="text-base font-mono font-bold text-zinc-100">{distanceMeters.toFixed(2)} m</div>
         </div>
       </div>
 
-      {/* Bottom AR Horizon Level & Guidance */}
-      <div className="relative z-10 p-4 bg-gradient-to-t from-black/90 to-transparent flex items-center justify-between text-xs text-white">
-        <div className="flex items-center gap-2">
-          <ArrowUp className="w-5 h-5 text-emerald-400" />
-          <div>
-            <div className="text-[11px] font-bold text-slate-200">Move Forward</div>
-            <div className="text-[10px] text-slate-400">Step 8.4m along line N 48° E</div>
-          </div>
+      {/* Bottom Guidance */}
+      <div className="relative z-10 p-3 bg-zinc-950/80 border-t border-zinc-800/60 flex items-center justify-between text-xs text-zinc-300">
+        <div className="flex items-center gap-1.5">
+          <ArrowUp className="w-4 h-4 text-zinc-400" />
+          <span className="text-[11px]">Follow direction N {bearingDeg.toFixed(0)}° E</span>
         </div>
-
-        <div className="text-right">
-          <div className="text-[10px] text-slate-400">Optical RTK Fix</div>
-          <div className="font-mono text-emerald-400 font-bold text-xs">Horizontal ±0.012 m</div>
-        </div>
+        <div className="font-mono text-zinc-400 text-[11px]">Tolerance: ±0.02m</div>
       </div>
     </div>
   );

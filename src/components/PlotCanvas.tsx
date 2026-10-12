@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Point2D, shoelaceArea, polygonPerimeter, getAllUnitsFromSqFt } from '../units';
-import { Trash2, Undo, Plus, Minus, Move, Grid, Check, Sparkles, Building2 } from 'lucide-react';
+import { Point2D, shoelaceArea, polygonPerimeter } from '../units';
+import { Trash2, Undo, Plus, Minus, Grid } from 'lucide-react';
 
 interface PlotCanvasProps {
   onAreaCalculated?: (areaSqFt: number, perimeter: number, points: Point2D[]) => void;
@@ -23,13 +23,12 @@ export const PlotCanvas: React.FC<PlotCanvasProps> = ({
   ]);
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
   const [snapToGrid, setSnapToGrid] = useState<boolean>(true);
-  const [scaleFactor, setScaleFactor] = useState<number>(0.5); // 1 SVG unit = 0.5 ft or m
+  const [scaleFactor, setScaleFactor] = useState<number>(0.5);
   const [zoom, setZoom] = useState<number>(1);
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState<boolean>(false);
   const [panStart, setPanStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Scaled coordinates in survey units (ft or m)
   const scaledPoints = points.map((p) => ({
     x: p.x * scaleFactor,
     y: p.y * scaleFactor,
@@ -46,7 +45,6 @@ export const PlotCanvas: React.FC<PlotCanvasProps> = ({
     }
   }, [points, scaleFactor, scaleUnit, footprintArea]);
 
-  // Convert SVG client coords to SVG space
   const getSVGCoordinates = (e: React.MouseEvent | React.TouchEvent): Point2D => {
     if (!svgRef.current) return { x: 0, y: 0 };
     const rect = svgRef.current.getBoundingClientRect();
@@ -112,17 +110,15 @@ export const PlotCanvas: React.FC<PlotCanvasProps> = ({
     ]);
   };
 
-  // SVG Polygon path string
   const pointsStr = points.map((p) => `${p.x},${p.y}`).join(' ');
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-      {/* CAD Toolbar */}
-      <div className="bg-slate-950/80 px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-xs font-bold text-slate-200">2D Field Plotter</span>
-          <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-sm flex flex-col">
+      {/* Simple Drafting Toolbar */}
+      <div className="bg-zinc-950 px-3.5 py-2.5 border-b border-zinc-800 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-zinc-300">2D Drafting View</span>
+          <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded font-mono">
             {points.length} Vertices
           </span>
         </div>
@@ -133,8 +129,8 @@ export const PlotCanvas: React.FC<PlotCanvasProps> = ({
             onClick={() => setSnapToGrid(!snapToGrid)}
             className={`p-1.5 rounded-lg border text-xs transition-colors flex items-center gap-1 ${
               snapToGrid
-                ? 'bg-emerald-950/60 border-emerald-600 text-emerald-400'
-                : 'bg-slate-900 border-slate-700 text-slate-400'
+                ? 'bg-zinc-800 border-zinc-700 text-zinc-200'
+                : 'bg-zinc-900 border-zinc-800 text-zinc-500'
             }`}
             title="Snap to Grid"
           >
@@ -144,14 +140,14 @@ export const PlotCanvas: React.FC<PlotCanvasProps> = ({
 
           <button
             onClick={() => setZoom((z) => Math.min(2.5, z + 0.2))}
-            className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300"
+            className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300"
             title="Zoom In"
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => setZoom((z) => Math.max(0.6, z - 0.2))}
-            className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300"
+            className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300"
             title="Zoom Out"
           >
             <Minus className="w-3.5 h-3.5" />
@@ -160,7 +156,7 @@ export const PlotCanvas: React.FC<PlotCanvasProps> = ({
           <button
             onClick={removeLastPoint}
             disabled={points.length <= 3}
-            className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 disabled:opacity-40"
+            className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 disabled:opacity-30"
             title="Undo Last Point"
           >
             <Undo className="w-3.5 h-3.5" />
@@ -168,7 +164,7 @@ export const PlotCanvas: React.FC<PlotCanvasProps> = ({
 
           <button
             onClick={clearPoints}
-            className="p-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 border border-red-800/40 text-red-300"
+            className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-zinc-200"
             title="Reset Triangle"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -176,19 +172,8 @@ export const PlotCanvas: React.FC<PlotCanvasProps> = ({
         </div>
       </div>
 
-      {/* Interactive CAD Canvas Area */}
-      <div className="relative w-full h-80 sm:h-96 bg-slate-950 cursor-crosshair overflow-hidden select-none touch-none">
-        {/* Subtle grid pattern background */}
-        <div
-          className="absolute inset-0 opacity-20 pointer-events-none"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle, #38bdf8 1px, transparent 1px), radial-gradient(circle, #38bdf8 1px, transparent 1px)',
-            backgroundSize: '20px 20px',
-            backgroundPosition: '0 0, 10px 10px',
-          }}
-        />
-
+      {/* Canvas Area */}
+      <div className="relative w-full h-80 sm:h-96 bg-zinc-950 cursor-crosshair overflow-hidden select-none touch-none">
         <svg
           ref={svgRef}
           className="w-full h-full"
@@ -199,26 +184,25 @@ export const PlotCanvas: React.FC<PlotCanvasProps> = ({
           onTouchEnd={handlePointerUp}
         >
           <g transform={`translate(${offset.x}, ${offset.y}) scale(${zoom})`}>
-            {/* Grid Lines */}
+            {/* Subtle Drafting Grid */}
             <defs>
-              <pattern id="smallGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1e293b" strokeWidth="0.5" />
+              <pattern id="minimalGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#27272a" strokeWidth="0.5" />
               </pattern>
             </defs>
-            <rect width="800" height="600" fill="url(#smallGrid)" />
+            <rect width="800" height="600" fill="url(#minimalGrid)" />
 
-            {/* Polygon Body */}
+            {/* Polygon Geometry */}
             {points.length >= 3 && (
               <polygon
                 points={pointsStr}
-                fill="rgba(16, 185, 129, 0.15)"
-                stroke="#10b981"
-                strokeWidth="2.5"
-                strokeDasharray="none"
+                fill="rgba(161, 161, 170, 0.08)"
+                stroke="#d4d4d8"
+                strokeWidth="2"
               />
             )}
 
-            {/* Simulated Building Footprint Deducted Area if any */}
+            {/* Deducted Building Footprint if any */}
             {footprintArea > 0 && points.length >= 3 && (
               <g>
                 <rect
@@ -226,18 +210,18 @@ export const PlotCanvas: React.FC<PlotCanvasProps> = ({
                   y="160"
                   width="70"
                   height="50"
-                  fill="rgba(239, 68, 68, 0.25)"
-                  stroke="#ef4444"
+                  fill="rgba(113, 113, 122, 0.2)"
+                  stroke="#71717a"
                   strokeWidth="1.5"
-                  strokeDasharray="4 2"
+                  strokeDasharray="4 3"
                 />
-                <text x="185" y="190" fill="#fca5a5" fontSize="10" fontWeight="bold">
+                <text x="185" y="190" fill="#a1a1aa" fontSize="10" fontWeight="500">
                   Building Footprint
                 </text>
               </g>
             )}
 
-            {/* Side Dimension Labels */}
+            {/* Edge Dimension Labels */}
             {points.map((p, idx) => {
               const next = points[(idx + 1) % points.length];
               const midX = (p.x + next.x) / 2;
@@ -250,21 +234,21 @@ export const PlotCanvas: React.FC<PlotCanvasProps> = ({
                 <g key={`edge-${idx}`}>
                   <rect
                     x={midX - 22}
-                    y={midY - 10}
+                    y={midY - 9}
                     width="44"
-                    height="18"
-                    rx="4"
-                    fill="#0f172a"
-                    stroke="#334155"
-                    strokeWidth="1"
+                    height="16"
+                    rx="3"
+                    fill="#18181b"
+                    stroke="#3f3f46"
+                    strokeWidth="0.8"
                   />
                   <text
                     x={midX}
-                    y={midY + 3}
+                    y={midY + 2.5}
                     textAnchor="middle"
-                    fill="#38bdf8"
+                    fill="#e4e4e7"
                     fontSize="9"
-                    fontWeight="600"
+                    fontWeight="500"
                     fontFamily="monospace"
                   >
                     {dist.toFixed(1)}{scaleUnit}
@@ -273,7 +257,7 @@ export const PlotCanvas: React.FC<PlotCanvasProps> = ({
               );
             })}
 
-            {/* Vertex Handles */}
+            {/* Vertices */}
             {points.map((p, idx) => (
               <g
                 key={`point-${idx}`}
@@ -284,20 +268,19 @@ export const PlotCanvas: React.FC<PlotCanvasProps> = ({
                 <circle
                   cx={p.x}
                   cy={p.y}
-                  r="8"
-                  fill="#059669"
-                  stroke="#ffffff"
-                  strokeWidth="2.5"
+                  r="6"
+                  fill="#ffffff"
+                  stroke="#18181b"
+                  strokeWidth="2"
                 />
                 <circle cx={p.x} cy={p.y} r="14" fill="transparent" />
                 <text
-                  x={p.x + 12}
-                  y={p.y - 8}
-                  fill="#f1f5f9"
+                  x={p.x + 10}
+                  y={p.y - 6}
+                  fill="#d4d4d8"
                   fontSize="10"
-                  fontWeight="bold"
                   fontFamily="monospace"
-                  className="pointer-events-none select-none drop-shadow"
+                  className="pointer-events-none select-none font-medium"
                 >
                   P{idx + 1}
                 </text>
@@ -306,36 +289,35 @@ export const PlotCanvas: React.FC<PlotCanvasProps> = ({
           </g>
         </svg>
 
-        {/* Live HUD Floating Over Canvas */}
-        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-          <div className="bg-slate-950/85 backdrop-blur-md border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-300 flex items-center gap-3 pointer-events-auto">
+        {/* Minimal Overlay Info */}
+        <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+          <div className="bg-zinc-900/90 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300 flex items-center gap-3 pointer-events-auto shadow-sm">
             <div>
-              <span className="text-[10px] text-slate-400 block">Gross Shoelace</span>
-              <span className="font-mono font-bold text-emerald-400">
+              <span className="text-[10px] text-zinc-500 block">Area</span>
+              <span className="font-mono font-semibold text-zinc-100">
                 {rawArea.toLocaleString('en-US', { maximumFractionDigits: 1 })} sq {scaleUnit}
               </span>
             </div>
-            <div className="h-6 w-px bg-slate-800" />
+            <div className="h-5 w-px bg-zinc-800" />
             <div>
-              <span className="text-[10px] text-slate-400 block">Perimeter</span>
-              <span className="font-mono font-bold text-sky-400">
+              <span className="text-[10px] text-zinc-500 block">Perimeter</span>
+              <span className="font-mono font-semibold text-zinc-300">
                 {rawPerimeter.toFixed(1)} {scaleUnit}
               </span>
             </div>
           </div>
 
-          <div className="text-[11px] text-slate-400 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-800 pointer-events-auto">
-            💡 Tap canvas to add vertex, drag to move
+          <div className="text-[11px] text-zinc-500 bg-zinc-900/90 px-2 py-1 rounded-lg border border-zinc-800 pointer-events-auto">
+            Click to add, drag node to move
           </div>
         </div>
       </div>
 
-      {/* Scale adjustment slider */}
-      <div className="p-3 bg-slate-950/50 border-t border-slate-800 flex items-center justify-between gap-4 text-xs">
-        <div className="flex items-center gap-2 text-slate-400">
-          <span>CAD Scale Ratio:</span>
-          <span className="font-mono font-bold text-white">1 px = {scaleFactor} {scaleUnit}</span>
-        </div>
+      {/* Scale slider */}
+      <div className="p-2.5 bg-zinc-950 border-t border-zinc-800 flex items-center justify-between text-xs">
+        <span className="text-zinc-500">
+          Scale: 1 px = <span className="font-mono text-zinc-200">{scaleFactor} {scaleUnit}</span>
+        </span>
         <input
           type="range"
           min="0.1"
@@ -343,7 +325,7 @@ export const PlotCanvas: React.FC<PlotCanvasProps> = ({
           step="0.1"
           value={scaleFactor}
           onChange={(e) => setScaleFactor(parseFloat(e.target.value))}
-          className="w-36 accent-emerald-500 cursor-pointer"
+          className="w-32 accent-zinc-400 cursor-pointer"
         />
       </div>
     </div>

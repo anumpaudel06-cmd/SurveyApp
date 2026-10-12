@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { GeoPoint, calculateStakeout } from '../units';
-import { Compass, Navigation2, Target, ArrowUpRight, CheckCircle2 } from 'lucide-react';
+import { Navigation2, Target } from 'lucide-react';
 
 interface StakeoutCompassProps {
   currentLocation?: GeoPoint;
@@ -12,14 +12,12 @@ export const StakeoutCompass: React.FC<StakeoutCompassProps> = ({
   targetPoint = { lat: 27.71738, lng: 85.32418 },
 }) => {
   const [curr, setCurr] = useState<GeoPoint>(currentLocation);
-  const [target, setTarget] = useState<GeoPoint>(targetPoint);
-  const [isSimulatingWalk, setIsSimulatingWalk] = useState(false);
+  const [target] = useState<GeoPoint>(targetPoint);
 
   const stakeout = calculateStakeout(curr, target);
   const isClose = stakeout.distanceMeters < 0.2;
 
   const simulateStepCloser = () => {
-    // Nudge current point towards target
     const dLat = (target.lat - curr.lat) * 0.4;
     const dLng = (target.lng - curr.lng) * 0.4;
     setCurr({
@@ -33,101 +31,90 @@ export const StakeoutCompass: React.FC<StakeoutCompassProps> = ({
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl flex flex-col items-center">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 shadow-sm flex flex-col items-center">
       {/* Header */}
-      <div className="w-full flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+      <div className="w-full flex items-center justify-between pb-3 border-b border-zinc-800 mb-3">
         <div className="flex items-center gap-2">
-          <Target className="w-5 h-5 text-emerald-400" />
+          <Target className="w-4 h-4 text-zinc-300" />
           <div>
-            <h3 className="text-sm font-bold text-white">Stakeout Navigation HUD</h3>
-            <p className="text-[11px] text-slate-400">Guiding surveyor to corner peg</p>
+            <h3 className="text-xs font-semibold text-zinc-200">Stakeout Guidance</h3>
+            <p className="text-[11px] text-zinc-500">Bearing to target peg</p>
           </div>
         </div>
-        <div className="text-right">
-          <span
-            className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
-              isClose
-                ? 'bg-emerald-950 text-emerald-400 border border-emerald-700'
-                : 'bg-amber-950 text-amber-400 border border-amber-700'
-            }`}
-          >
-            {isClose ? 'ON TARGET (STAKE PEG)' : 'APPROACHING'}
-          </span>
-        </div>
+        <span
+          className={`text-[10px] font-medium px-2 py-0.5 rounded uppercase tracking-wider ${
+            isClose
+              ? 'bg-zinc-800 text-zinc-200 border border-zinc-700'
+              : 'bg-zinc-950 text-zinc-400 border border-zinc-800'
+          }`}
+        >
+          {isClose ? 'At Target' : 'Approaching'}
+        </span>
       </div>
 
-      {/* Circular Compass Dial */}
-      <div className="relative w-56 h-56 rounded-full border-4 border-slate-800 bg-slate-950 flex items-center justify-center shadow-inner my-2">
+      {/* Minimal Compass Dial */}
+      <div className="relative w-48 h-48 rounded-full border border-zinc-800 bg-zinc-950 flex items-center justify-center my-3">
         {/* Cardinal Markers */}
-        <span className="absolute top-2 text-xs font-bold text-red-500 font-mono">N</span>
-        <span className="absolute bottom-2 text-xs font-bold text-slate-400 font-mono">S</span>
-        <span className="absolute right-2 text-xs font-bold text-slate-400 font-mono">E</span>
-        <span className="absolute left-2 text-xs font-bold text-slate-400 font-mono">W</span>
-
-        {/* Graduations */}
-        <div className="absolute inset-2 rounded-full border border-dashed border-slate-800 pointer-events-none" />
+        <span className="absolute top-2 text-[10px] font-bold text-zinc-300 font-mono">N</span>
+        <span className="absolute bottom-2 text-[10px] font-medium text-zinc-600 font-mono">S</span>
+        <span className="absolute right-2 text-[10px] font-medium text-zinc-600 font-mono">E</span>
+        <span className="absolute left-2 text-[10px] font-medium text-zinc-600 font-mono">W</span>
 
         {/* Dynamic Navigation Needle */}
         <div
-          className="relative w-full h-full flex items-center justify-center transition-transform duration-500 ease-out"
+          className="relative w-full h-full flex items-center justify-center transition-transform duration-300 ease-out"
           style={{ transform: `rotate(${stakeout.azimuthDeg}deg)` }}
         >
-          {/* Arrow pointing to target */}
-          <div className="flex flex-col items-center -translate-y-12">
-            <Navigation2 className="w-10 h-10 text-emerald-400 fill-emerald-500 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+          <div className="flex flex-col items-center -translate-y-10">
+            <Navigation2 className="w-7 h-7 text-zinc-100 fill-zinc-100" />
           </div>
         </div>
 
-        {/* Distance Display in Center Circle */}
-        <div className="absolute w-28 h-28 rounded-full bg-slate-900 border border-slate-700/80 flex flex-col items-center justify-center text-center p-2 shadow-2xl">
-          <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Distance</span>
-          <span
-            className={`font-mono font-extrabold text-xl ${
-              isClose ? 'text-emerald-400 animate-pulse' : 'text-white'
-            }`}
-          >
+        {/* Center Distance Card */}
+        <div className="absolute w-24 h-24 rounded-full bg-zinc-900 border border-zinc-800 flex flex-col items-center justify-center text-center p-2">
+          <span className="text-[9px] uppercase tracking-wider text-zinc-500 font-medium">Distance</span>
+          <span className="font-mono font-bold text-lg text-zinc-100">
             {stakeout.distanceMeters.toFixed(2)}
-            <span className="text-xs text-slate-400 font-normal ml-0.5">m</span>
+            <span className="text-[10px] text-zinc-500 ml-0.5">m</span>
           </span>
-          <span className="text-[10px] text-slate-400 font-mono">
-            {(stakeout.distanceMeters * 3.28084).toFixed(2)} ft
+          <span className="text-[10px] text-zinc-500 font-mono">
+            {(stakeout.distanceMeters * 3.28084).toFixed(1)} ft
           </span>
         </div>
       </div>
 
-      {/* Azimuth and Delta Coordinate Offsets */}
-      <div className="w-full grid grid-cols-3 gap-2 mt-4 text-center text-xs">
-        <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
-          <div className="text-[10px] text-slate-400">Azimuth (Bearing)</div>
-          <div className="font-mono font-bold text-amber-300 text-sm mt-0.5">
+      {/* Target stats */}
+      <div className="w-full grid grid-cols-3 gap-2 mt-2 text-center text-xs">
+        <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-800/80">
+          <div className="text-[10px] text-zinc-500">Azimuth</div>
+          <div className="font-mono font-medium text-zinc-200 mt-0.5">
             {stakeout.azimuthDeg}° {stakeout.cardinalDirection}
           </div>
         </div>
-        <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
-          <div className="text-[10px] text-slate-400">ΔE (Easting)</div>
-          <div className="font-mono font-bold text-sky-300 text-sm mt-0.5">
+        <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-800/80">
+          <div className="text-[10px] text-zinc-500">Δ Easting</div>
+          <div className="font-mono font-medium text-zinc-200 mt-0.5">
             {stakeout.deltaEastingMeters >= 0 ? `+${stakeout.deltaEastingMeters}` : stakeout.deltaEastingMeters} m
           </div>
         </div>
-        <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
-          <div className="text-[10px] text-slate-400">ΔN (Northing)</div>
-          <div className="font-mono font-bold text-sky-300 text-sm mt-0.5">
+        <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-800/80">
+          <div className="text-[10px] text-zinc-500">Δ Northing</div>
+          <div className="font-mono font-medium text-zinc-200 mt-0.5">
             {stakeout.deltaNorthingMeters >= 0 ? `+${stakeout.deltaNorthingMeters}` : stakeout.deltaNorthingMeters} m
           </div>
         </div>
       </div>
 
-      {/* Field Actions */}
-      <div className="w-full flex items-center justify-between gap-3 mt-4 pt-3 border-t border-slate-800">
+      <div className="w-full flex items-center justify-between gap-2 mt-3 pt-3 border-t border-zinc-800">
         <button
           onClick={simulateStepCloser}
-          className="flex-1 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-semibold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all"
+          className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium py-2 rounded-lg transition-colors"
         >
-          <ArrowUpRight className="w-4 h-4" /> Step Closer (Simulation)
+          Step Closer (Simulate)
         </button>
         <button
           onClick={resetTarget}
-          className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-2 px-3 rounded-xl border border-slate-700"
+          className="bg-zinc-950 hover:bg-zinc-900 text-zinc-400 text-xs py-2 px-3 rounded-lg border border-zinc-800 transition-colors"
         >
           Reset
         </button>
