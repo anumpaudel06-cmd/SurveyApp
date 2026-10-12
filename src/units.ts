@@ -146,9 +146,6 @@ export function getAllUnitsFromSqFt(sqFt: number): MultiUnitAreaResult {
   };
 }
 
-/**
- * Convert from square meters to all units
- */
 export function getAllUnitsFromSqM(sqM: number): MultiUnitAreaResult {
   const sqFt = (Number(sqM) || 0) * SQM_TO_SQFT;
   return getAllUnitsFromSqFt(sqFt);
@@ -161,7 +158,7 @@ export function getAllUnitsFromSqM(sqM: number): MultiUnitAreaResult {
  */
 export function triangleAreaHeron(a: number, b: number, c: number): number {
   if (a <= 0 || b <= 0 || c <= 0) return 0;
-  if (a + b <= c || a + c <= b || b + c <= a) return 0; // Triangle inequality check
+  if (a + b <= c || a + c <= b || b + c <= a) return 0;
   const s = (a + b + c) / 2;
   const areaSq = s * (s - a) * (s - b) * (s - c);
   return areaSq > 0 ? Math.sqrt(areaSq) : 0;
@@ -182,15 +179,21 @@ export function rightTriangleArea(base: number, height: number): number {
 }
 
 /**
- * Triangle by SAS (Side-Angle-Side): 0.5 * a * b * sin(C in degrees)
+ * Circle area
  */
-export function triangleAreaSAS(a: number, b: number, angleDeg: number): number {
-  const rad = (angleDeg * Math.PI) / 180;
-  return 0.5 * a * b * Math.sin(rad);
+export function circleArea(radius: number): number {
+  return Math.PI * Math.max(0, radius) * Math.max(0, radius);
 }
 
 /**
- * Deduct building footprint(s) from gross land area
+ * Semi-circle area
+ */
+export function semiCircleArea(radius: number): number {
+  return 0.5 * Math.PI * Math.max(0, radius) * Math.max(0, radius);
+}
+
+/**
+ * Deduct building footprint from gross area
  */
 export function deductFootprint(grossArea: number, buildingFootprints: number[]): {
   grossArea: number;
@@ -212,7 +215,7 @@ export interface Point2D {
 }
 
 /**
- * Shoelace formula for polygon area (coordinates in feet or meters)
+ * Shoelace formula for polygon area
  */
 export function shoelaceArea(points: Point2D[]): number {
   if (points.length < 3) return 0;
@@ -249,11 +252,8 @@ export interface GeoPoint {
   lng: number;
 }
 
-/**
- * Geodesic distance between two WGS84 lat/lng points using Haversine formula (in meters)
- */
 export function haversineDistanceMeters(p1: GeoPoint, p2: GeoPoint): number {
-  const R = 6371000; // Earth radius in meters
+  const R = 6371000;
   const dLat = ((p2.lat - p1.lat) * Math.PI) / 180;
   const dLng = ((p2.lng - p1.lng) * Math.PI) / 180;
   const lat1 = (p1.lat * Math.PI) / 180;
@@ -266,13 +266,9 @@ export function haversineDistanceMeters(p1: GeoPoint, p2: GeoPoint): number {
   return R * c;
 }
 
-/**
- * Geodesic polygon area on sphere (in square meters)
- * Uses spherical excess algorithm
- */
 export function geodesicPolygonAreaSqM(coords: GeoPoint[]): number {
   if (coords.length < 3) return 0;
-  const R = 6378137; // WGS84 major radius
+  const R = 6378137;
   let area = 0;
   const n = coords.length;
 
@@ -287,19 +283,20 @@ export function geodesicPolygonAreaSqM(coords: GeoPoint[]): number {
     area += dLng * (2 + Math.sin(lat1) + Math.sin(lat2));
   }
 
-  area = (Math.abs(area) * R * R) / 4.0;
-  return area;
+  return (Math.abs(area) * R * R) / 4.0;
 }
 
 // ----------------- LENGTH & AREA CONVERTERS -----------------
 
-export type LengthUnit = 'feet' | 'meters' | 'inches' | 'yards' | 'chains' | 'links';
+export type LengthUnit = 'feet' | 'meters' | 'inches' | 'yards' | 'hath' | 'gaj' | 'chains' | 'links';
 
 export const LENGTH_TO_METERS: Record<LengthUnit, number> = {
   meters: 1,
   feet: 0.3048,
   inches: 0.0254,
   yards: 0.9144,
+  hath: 0.4572, // 1 Hath = 1.5 ft = 0.4572 m
+  gaj: 0.9144,  // 1 Gaj = 3 ft = 0.9144 m
   chains: 20.1168, // 66 ft
   links: 0.201168, // 0.66 ft
 };
@@ -369,11 +366,279 @@ export function calculateAreaArithmetic(
   return getAllUnitsFromSqFt(resultSqFt);
 }
 
-// ----------------- SURVEY & GEODESY TOOLS -----------------
+// ----------------- ADVANCED TRAVERSE COMPUTATION -----------------
+
+export interface TraverseLeg {
+  bearingDeg: number;
+  distance: number;
+}
+
+export function calculateTraverseClosure(legs: TraverseLeg[]) {
+  const inputs: TraverseStationInput[] = legs.map((l, i) => ({
+    id: `S${i + 1}`,
+    bearingDeg: l.bearingDeg,
+    distance: l.distance,
+  }));
+  const res = calculateFullTraverse(inputs);
+  return {
+    totalDistance: res.totalDistance,
+    sumNorthing: res.sumLat,
+    sumEasting: res.sumDep,
+    linearClosureError: res.linearMisclosure,
+    relativePrecision: res.relativePrecision,
+    fractionPrecision: res.fractionPrecision,
+    bearingErrorDeg: res.misclosureBearingDeg,
+  };
+}
+
+export interface TraverseStationInput {
+  id: string; // e.g. "1", "A"
+  bearingDeg: number; // Azimuth (0-360)
+  distance: number; // Distance in meters
+}
+
+export interface TraverseComputedStation {
+  fromId: string;
+  toId: string;
+  bearingDeg: number;
+  distance: number;
+  rawLat: number; // dN = Distance * cos(Bearing)
+  rawDep: number; // dE = Distance * sin(Bearing)
+  corrLat: number; // Correction applied to Latitude
+  corrDep: number; // Correction applied to Departure
+  adjLat: number; // Adjusted Latitude
+  adjDep: number; // Adjusted Departure
+  easting: number; // Cumulative Easting
+  northing: number; // Cumulative Northing
+}
+
+export type TraverseAdjustmentRule = 'bowditch' | 'transit';
+export type SurveyClass = 'class1' | 'class2' | 'class3' | 'class4';
+
+export interface TraverseFullResult {
+  stations: TraverseComputedStation[];
+  startEasting: number;
+  startNorthing: number;
+  totalDistance: number;
+  sumLat: number;
+  sumDep: number;
+  linearMisclosure: number;
+  relativePrecision: string;
+  fractionPrecision: number;
+  misclosureBearingDeg: number;
+  adjustmentRule: TraverseAdjustmentRule;
+  recommendedRule: TraverseAdjustmentRule;
+  ruleExplanation: string;
+  surveyClass: SurveyClass;
+  permissibleRatio: number;
+  isPermissible: boolean;
+  permissibleLimitStr: string;
+}
+
+export const SURVEY_CLASS_SPECS: Record<SurveyClass, { name: string; ratio: number; description: string }> = {
+  class1: { name: 'Class 1 (Control Survey)', ratio: 10000, description: '1:10,000 - Higher precision cadastral control' },
+  class2: { name: 'Class 2 (Urban Cadastral)', ratio: 5000, description: '1:5,000 - Standard urban plot boundary' },
+  class3: { name: 'Class 3 (Rural Cadastral)', ratio: 3000, description: '1:3,000 - Rural agricultural parcels' },
+  class4: { name: 'Class 4 (Reconnaissance / Rough)', ratio: 1500, description: '1:1,500 - Preliminary site reconnaissance' },
+};
+
+export function calculateFullTraverse(
+  inputs: TraverseStationInput[],
+  startE = 500000,
+  startN = 3000000,
+  rule: TraverseAdjustmentRule = 'bowditch',
+  surveyClass: SurveyClass = 'class2'
+): TraverseFullResult {
+  if (inputs.length === 0) {
+    return {
+      stations: [],
+      startEasting: startE,
+      startNorthing: startN,
+      totalDistance: 0,
+      sumLat: 0,
+      sumDep: 0,
+      linearMisclosure: 0,
+      relativePrecision: '1 : ∞',
+      fractionPrecision: 999999,
+      misclosureBearingDeg: 0,
+      adjustmentRule: rule,
+      recommendedRule: 'bowditch',
+      ruleExplanation: 'Bowditch (Compass) rule balances both angles and distances equally.',
+      surveyClass,
+      permissibleRatio: 5000,
+      isPermissible: true,
+      permissibleLimitStr: '1 : 5,000',
+    };
+  }
+
+  let totalDist = 0;
+  let sumLat = 0;
+  let sumDep = 0;
+  let absSumLat = 0;
+  let absSumDep = 0;
+
+  // 1. Calculate raw Latitudes & Departures
+  const rawData = inputs.map((stn, idx) => {
+    const nextStn = inputs[(idx + 1) % inputs.length];
+    const rad = (stn.bearingDeg * Math.PI) / 180;
+    const lat = stn.distance * Math.cos(rad);
+    const dep = stn.distance * Math.sin(rad);
+
+    totalDist += stn.distance;
+    sumLat += lat;
+    sumDep += dep;
+    absSumLat += Math.abs(lat);
+    absSumDep += Math.abs(dep);
+
+    return {
+      fromId: stn.id,
+      toId: nextStn.id,
+      bearingDeg: stn.bearingDeg,
+      distance: stn.distance,
+      rawLat: lat,
+      rawDep: dep,
+    };
+  });
+
+  // Linear closure error
+  const linearMisclosure = Math.sqrt(sumLat * sumLat + sumDep * sumDep);
+  const fractionPrecision = linearMisclosure > 0.0001 ? Math.round(totalDist / linearMisclosure) : 999999;
+  const misclosureBearingDeg = (Math.atan2(-sumDep, -sumLat) * (180 / Math.PI) + 360) % 360;
+
+  // Permissible check
+  const permissibleSpec = SURVEY_CLASS_SPECS[surveyClass];
+  const isPermissible = fractionPrecision >= permissibleSpec.ratio;
+
+  // Recommendation: Bowditch is best for total station / modern electronic surveying where distance & angle precision are balanced.
+  // Transit rule is used when angular measurements are substantially more precise than taped distances.
+  const recommendedRule: TraverseAdjustmentRule = 'bowditch';
+  const ruleExplanation =
+    rule === 'bowditch'
+      ? 'Bowditch Rule (Compass Rule) selected: Distributes error proportionally to leg lengths. Recommended for Total Station & electronic EDM surveys where angular and distance errors are equally likely.'
+      : 'Transit Rule selected: Distributes error proportionally to the latitude and departure magnitudes without changing angles excessively. Recommended when angular measurements are significantly more precise than linear distance taping.';
+
+  // 2. Adjust using selected rule
+  let currentE = startE;
+  let currentN = startN;
+
+  const stations: TraverseComputedStation[] = rawData.map((d) => {
+    let corrLat = 0;
+    let corrDep = 0;
+
+    if (rule === 'bowditch') {
+      // Correction = - (Total Error) * (Leg Distance / Total Distance)
+      corrLat = totalDist > 0 ? -sumLat * (d.distance / totalDist) : 0;
+      corrDep = totalDist > 0 ? -sumDep * (d.distance / totalDist) : 0;
+    } else {
+      // Transit Rule: Correction = - (Total Error) * (|Lat| / Sum |Lat|)
+      corrLat = absSumLat > 0 ? -sumLat * (Math.abs(d.rawLat) / absSumLat) : 0;
+      corrDep = absSumDep > 0 ? -sumDep * (Math.abs(d.rawDep) / absSumDep) : 0;
+    }
+
+    const adjLat = d.rawLat + corrLat;
+    const adjDep = d.rawDep + corrDep;
+
+    currentN += adjLat;
+    currentE += adjDep;
+
+    return {
+      fromId: d.fromId,
+      toId: d.toId,
+      bearingDeg: d.bearingDeg,
+      distance: d.distance,
+      rawLat: parseFloat(d.rawLat.toFixed(4)),
+      rawDep: parseFloat(d.rawDep.toFixed(4)),
+      corrLat: parseFloat(corrLat.toFixed(4)),
+      corrDep: parseFloat(corrDep.toFixed(4)),
+      adjLat: parseFloat(adjLat.toFixed(4)),
+      adjDep: parseFloat(adjDep.toFixed(4)),
+      easting: parseFloat(currentE.toFixed(3)),
+      northing: parseFloat(currentN.toFixed(3)),
+    };
+  });
+
+  return {
+    stations,
+    startEasting: startE,
+    startNorthing: startN,
+    totalDistance: parseFloat(totalDist.toFixed(3)),
+    sumLat: parseFloat(sumLat.toFixed(4)),
+    sumDep: parseFloat(sumDep.toFixed(4)),
+    linearMisclosure: parseFloat(linearMisclosure.toFixed(4)),
+    relativePrecision: `1 : ${fractionPrecision.toLocaleString()}`,
+    fractionPrecision,
+    misclosureBearingDeg: parseFloat(misclosureBearingDeg.toFixed(1)),
+    adjustmentRule: rule,
+    recommendedRule,
+    ruleExplanation,
+    surveyClass,
+    permissibleRatio: permissibleSpec.ratio,
+    isPermissible,
+    permissibleLimitStr: `1 : ${permissibleSpec.ratio.toLocaleString()}`,
+  };
+}
 
 /**
- * Degrees to DMS (Degrees, Minutes, Seconds)
+ * Standard File Format Exporter: CSV format (Excel & GIS compatible)
  */
+export function generateTraverseCSV(result: TraverseFullResult): string {
+  let csv = 'Station_From,Station_To,Bearing_Deg,Distance_m,Raw_dN_m,Raw_dE_m,Corr_dN_m,Corr_dE_m,Adj_dN_m,Adj_dE_m,Easting_m,Northing_m\n';
+
+  result.stations.forEach((stn) => {
+    csv += `${stn.fromId},${stn.toId},${stn.bearingDeg},${stn.distance},${stn.rawLat},${stn.rawDep},${stn.corrLat},${stn.corrDep},${stn.adjLat},${stn.adjDep},${stn.easting},${stn.northing}\n`;
+  });
+
+  csv += `\n# TRAVERSE SUMMARY\n`;
+  csv += `# Total Perimeter (m),${result.totalDistance}\n`;
+  csv += `# Linear Misclosure (m),${result.linearMisclosure}\n`;
+  csv += `# Relative Precision,${result.relativePrecision}\n`;
+  csv += `# Permissible Standard,${result.permissibleLimitStr}\n`;
+  csv += `# Status,${result.isPermissible ? 'PASSED' : 'EXCEEDED'}\n`;
+  csv += `# Adjustment Rule Applied,${result.adjustmentRule.toUpperCase()}\n`;
+
+  return csv;
+}
+
+/**
+ * Standard File Format Exporter: Field Book Text Report
+ */
+export function generateTraverseReportTXT(result: TraverseFullResult): string {
+  let txt = `========================================================================\n`;
+  txt += `                 LAND SURVEY PRO - TRAVERSE COMPUTATION REPORT          \n`;
+  txt += `========================================================================\n\n`;
+  txt += `Adjustment Method : ${result.adjustmentRule.toUpperCase()} RULE\n`;
+  txt += `Survey Standard   : ${SURVEY_CLASS_SPECS[result.surveyClass].name} (${result.permissibleLimitStr})\n`;
+  txt += `Initial Origin    : Easting = ${result.startEasting.toFixed(3)} m | Northing = ${result.startNorthing.toFixed(3)} m\n`;
+  txt += `Total Perimeter   : ${result.totalDistance.toFixed(3)} m\n`;
+  txt += `Sum Latitudes (dN): ${result.sumLat.toFixed(4)} m\n`;
+  txt += `Sum Departures(dE): ${result.sumDep.toFixed(4)} m\n`;
+  txt += `Linear Misclosure : ${result.linearMisclosure.toFixed(4)} m\n`;
+  txt += `Relative Precision: ${result.relativePrecision}\n`;
+  txt += `Verification      : ${result.isPermissible ? 'PASSED (Acceptable)' : 'FAILED (Exceeds Permissible Limit)'}\n\n`;
+  txt += `------------------------------------------------------------------------\n`;
+  txt += `Leg        Azimuth   Dist(m)   Raw dN    Raw dE    Adj dN    Adj dE    Easting     Northing\n`;
+  txt += `------------------------------------------------------------------------\n`;
+
+  result.stations.forEach((s) => {
+    const leg = `${s.fromId}->${s.toId}`.padEnd(10);
+    const az = `${s.bearingDeg.toFixed(1)}°`.padStart(7);
+    const dist = `${s.distance.toFixed(2)}`.padStart(8);
+    const rdN = `${s.rawLat.toFixed(3)}`.padStart(9);
+    const rdE = `${s.rawDep.toFixed(3)}`.padStart(9);
+    const adN = `${s.adjLat.toFixed(3)}`.padStart(9);
+    const adE = `${s.adjDep.toFixed(3)}`.padStart(9);
+    const E = `${s.easting.toFixed(3)}`.padStart(11);
+    const N = `${s.northing.toFixed(3)}`.padStart(12);
+
+    txt += `${leg} ${az} ${dist} ${rdN} ${rdE} ${adN} ${adE} ${E} ${N}\n`;
+  });
+
+  txt += `------------------------------------------------------------------------\n`;
+  return txt;
+}
+
+// ----------------- GEODETIC / PROJECTIONS -----------------
+
 export function degToDms(deg: number, isLat: boolean): string {
   const dir = isLat ? (deg >= 0 ? 'N' : 'S') : deg >= 0 ? 'E' : 'W';
   const abs = Math.abs(deg);
@@ -384,15 +649,6 @@ export function degToDms(deg: number, isLat: boolean): string {
   return `${d}° ${m}' ${s}" ${dir}`;
 }
 
-/**
- * DMS to Decimal Degrees
- */
-export function dmsToDeg(d: number, m: number, s: number, dir: 'N' | 'S' | 'E' | 'W'): number {
-  let dec = d + m / 60 + s / 3600;
-  if (dir === 'S' || dir === 'W') dec = -dec;
-  return dec;
-}
-
 export interface UTMCoordinate {
   zone: number;
   hemisphere: 'N' | 'S';
@@ -401,14 +657,11 @@ export interface UTMCoordinate {
   formatted: string;
 }
 
-/**
- * WGS84 Lat/Lon to approximate UTM coordinates
- */
 export function latLngToUTM(lat: number, lng: number): UTMCoordinate {
   const zone = Math.floor((lng + 180) / 6) + 1;
   const hemisphere = lat >= 0 ? 'N' : 'S';
 
-  const a = 6378137.0; // WGS84 equatorial radius
+  const a = 6378137.0;
   const f = 1 / 298.257223563;
   const e2 = 2 * f - f * f;
   const k0 = 0.9996;
@@ -447,7 +700,7 @@ export function latLngToUTM(lat: number, lng: number): UTMCoordinate {
           ((61 - 58 * T + T * T + 600 * C - 330 * (e2 / (1 - e2))) * Math.pow(A, 6)) / 720));
 
   if (lat < 0) {
-    northing += 10000000; // False northing for southern hemisphere
+    northing += 10000000;
   }
 
   const roundedE = Math.round(easting);
@@ -462,9 +715,6 @@ export function latLngToUTM(lat: number, lng: number): UTMCoordinate {
   };
 }
 
-/**
- * UTM to MGRS representation string
- */
 export function utmToMGRS(utm: UTMCoordinate): string {
   const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
   const colLetter = letters[Math.floor(utm.easting / 100000) % letters.length];
@@ -474,121 +724,8 @@ export function utmToMGRS(utm: UTMCoordinate): string {
   return `${utm.zone}${utm.hemisphere} ${colLetter}${rowLetter} ${e100k.slice(0, 4)} ${n100k.slice(0, 4)}`;
 }
 
-/**
- * Traverse closure error and precision calculation
- */
-export interface TraverseLeg {
-  bearingDeg: number;
-  distance: number;
-}
-
-export interface ClosureErrorResult {
-  totalDistance: number;
-  sumNorthing: number; // sum(dY)
-  sumEasting: number;  // sum(dX)
-  linearClosureError: number;
-  relativePrecision: string;
-  fractionPrecision: number;
-  bearingErrorDeg: number;
-}
-
-export function calculateTraverseClosure(legs: TraverseLeg[]): ClosureErrorResult {
-  let totalDist = 0;
-  let sumN = 0;
-  let sumE = 0;
-
-  for (const leg of legs) {
-    const rad = (leg.bearingDeg * Math.PI) / 180;
-    const dN = leg.distance * Math.cos(rad);
-    const dE = leg.distance * Math.sin(rad);
-    sumN += dN;
-    sumE += dE;
-    totalDist += leg.distance;
-  }
-
-  const closureErr = Math.sqrt(sumN * sumN + sumE * sumE);
-  const precisionRatio = closureErr > 0.00001 ? Math.round(totalDist / closureErr) : 999999;
-  const bearingErr = (Math.atan2(sumE, sumN) * 180) / Math.PI;
-
-  return {
-    totalDistance: totalDist,
-    sumNorthing: parseFloat(sumN.toFixed(4)),
-    sumEasting: parseFloat(sumE.toFixed(4)),
-    linearClosureError: parseFloat(closureErr.toFixed(4)),
-    relativePrecision: `1 : ${precisionRatio.toLocaleString()}`,
-    fractionPrecision: precisionRatio,
-    bearingErrorDeg: (bearingErr + 360) % 360,
-  };
-}
-
-/**
- * Earthwork cut/fill volume calculation (Average End Area & Grid)
- */
-export interface EarthworkResult {
-  cutVolumeCuM: number;
-  fillVolumeCuM: number;
-  netVolumeCuM: number;
-  cutVolumeCuYd: number;
-  fillVolumeCuYd: number;
-  netVolumeCuYd: number;
-}
-
-export function calculateEndAreaVolume(
-  area1: number,
-  area2: number,
-  stationDistance: number
-): number {
-  return ((area1 + area2) / 2) * stationDistance;
-}
-
-export function calculateGridEarthwork(
-  existingGrid: number[][],
-  proposedGrid: number[][],
-  cellSizeM: number
-): EarthworkResult {
-  let cutVol = 0;
-  let fillVol = 0;
-  const cellArea = cellSizeM * cellSizeM;
-
-  for (let r = 0; r < existingGrid.length; r++) {
-    for (let c = 0; c < (existingGrid[r]?.length || 0); c++) {
-      const exist = existingGrid[r][c];
-      const prop = proposedGrid[r]?.[c] ?? exist;
-      const diff = prop - exist; // > 0 means fill, < 0 means cut
-      if (diff > 0) {
-        fillVol += diff * cellArea;
-      } else if (diff < 0) {
-        cutVol += Math.abs(diff) * cellArea;
-      }
-    }
-  }
-
-  const cuMToCuYd = 1.30795;
-
-  return {
-    cutVolumeCuM: parseFloat(cutVol.toFixed(2)),
-    fillVolumeCuM: parseFloat(fillVol.toFixed(2)),
-    netVolumeCuM: parseFloat((fillVol - cutVol).toFixed(2)),
-    cutVolumeCuYd: parseFloat((cutVol * cuMToCuYd).toFixed(2)),
-    fillVolumeCuYd: parseFloat((fillVol * cuMToCuYd).toFixed(2)),
-    netVolumeCuYd: parseFloat(((fillVol - cutVol) * cuMToCuYd).toFixed(2)),
-  };
-}
-
-/**
- * Stakeout calculation: Bearing, distance, and relative offsets
- */
-export interface StakeoutGuide {
-  distanceMeters: number;
-  azimuthDeg: number;
-  deltaEastingMeters: number;
-  deltaNorthingMeters: number;
-  cardinalDirection: string;
-}
-
-export function calculateStakeout(current: GeoPoint, target: GeoPoint): StakeoutGuide {
+export function calculateStakeout(current: GeoPoint, target: GeoPoint) {
   const dist = haversineDistanceMeters(current, target);
-  
   const y = Math.sin(((target.lng - current.lng) * Math.PI) / 180) * Math.cos((target.lat * Math.PI) / 180);
   const x =
     Math.cos((current.lat * Math.PI) / 180) * Math.sin((target.lat * Math.PI) / 180) -
@@ -598,7 +735,6 @@ export function calculateStakeout(current: GeoPoint, target: GeoPoint): Stakeout
   let az = (Math.atan2(y, x) * 180) / Math.PI;
   az = (az + 360) % 360;
 
-  // Approximate metric delta
   const dLatM = (target.lat - current.lat) * 111139;
   const dLngM = (target.lng - current.lng) * 111139 * Math.cos((current.lat * Math.PI) / 180);
 
@@ -614,19 +750,46 @@ export function calculateStakeout(current: GeoPoint, target: GeoPoint): Stakeout
   };
 }
 
-/**
- * Export helpers: Generate DXF, KML, and GeoJSON strings
- */
+export function calculateEndAreaVolume(area1: number, area2: number, stationDistance: number): number {
+  return ((area1 + area2) / 2) * stationDistance;
+}
+
+export function calculateGridEarthwork(existingGrid: number[][], proposedGrid: number[][], cellSizeM: number) {
+  let cutVol = 0;
+  let fillVol = 0;
+  const cellArea = cellSizeM * cellSizeM;
+
+  for (let r = 0; r < existingGrid.length; r++) {
+    for (let c = 0; c < (existingGrid[r]?.length || 0); c++) {
+      const exist = existingGrid[r][c];
+      const prop = proposedGrid[r]?.[c] ?? exist;
+      const diff = prop - exist;
+      if (diff > 0) {
+        fillVol += diff * cellArea;
+      } else if (diff < 0) {
+        cutVol += Math.abs(diff) * cellArea;
+      }
+    }
+  }
+
+  const cuMToCuYd = 1.30795;
+  return {
+    cutVolumeCuM: parseFloat(cutVol.toFixed(2)),
+    fillVolumeCuM: parseFloat(fillVol.toFixed(2)),
+    netVolumeCuM: parseFloat((fillVol - cutVol).toFixed(2)),
+    cutVolumeCuYd: parseFloat((cutVol * cuMToCuYd).toFixed(2)),
+    fillVolumeCuYd: parseFloat((fillVol * cuMToCuYd).toFixed(2)),
+    netVolumeCuYd: parseFloat(((fillVol - cutVol) * cuMToCuYd).toFixed(2)),
+  };
+}
+
 export function generateDXF(points: Point2D[], polygonName = 'SURVEY_PLOT'): string {
-  let entities = '';
-  // Polyline
-  entities += '0\nPOLYLINE\n8\nBOUNDARY\n66\n1\n70\n1\n';
+  let entities = '0\nPOLYLINE\n8\nBOUNDARY\n66\n1\n70\n1\n';
   points.forEach((p) => {
     entities += `0\nVERTEX\n8\nBOUNDARY\n10\n${p.x.toFixed(4)}\n20\n${p.y.toFixed(4)}\n30\n0.0\n`;
   });
   entities += '0\nSEQEND\n';
 
-  // Text labels for vertices
   points.forEach((p, idx) => {
     entities += `0\nTEXT\n8\nLABELS\n10\n${(p.x + 0.5).toFixed(4)}\n20\n${(p.y + 0.5).toFixed(4)}\n30\n0.0\n40\n0.8\n1\nP${idx + 1}\n`;
   });
@@ -637,30 +800,16 @@ export function generateDXF(points: Point2D[], polygonName = 'SURVEY_PLOT'): str
 export function generateKML(coords: GeoPoint[], name = 'Land Survey Pro Polygon'): string {
   if (coords.length === 0) return '';
   const closedCoords = [...coords];
-  if (coords.length > 2) {
-    closedCoords.push(coords[0]);
-  }
+  if (coords.length > 2) closedCoords.push(coords[0]);
   const coordString = closedCoords.map((c) => `${c.lng.toFixed(7)},${c.lat.toFixed(7)},0`).join(' ');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>${name}</name>
-    <Style id="polyStyle">
-      <LineStyle>
-        <color>ff00aaff</color>
-        <width>3</width>
-      </LineStyle>
-      <PolyStyle>
-        <color>4d00ffff</color>
-      </PolyStyle>
-    </Style>
     <Placemark>
       <name>${name}</name>
-      <styleUrl>#polyStyle</styleUrl>
       <Polygon>
-        <extrude>1</extrude>
-        <altitudeMode>relativeToGround</altitudeMode>
         <outerBoundaryIs>
           <LinearRing>
             <coordinates>${coordString}</coordinates>
@@ -674,20 +823,8 @@ export function generateKML(coords: GeoPoint[], name = 'Land Survey Pro Polygon'
 
 export function generateGeoJSON(coords: GeoPoint[], properties: Record<string, any> = {}): string {
   if (coords.length < 3) {
-    return JSON.stringify(
-      {
-        type: 'FeatureCollection',
-        features: coords.map((c, i) => ({
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [c.lng, c.lat] },
-          properties: { index: i + 1 },
-        })),
-      },
-      null,
-      2
-    );
+    return JSON.stringify({ type: 'FeatureCollection', features: [] }, null, 2);
   }
-
   const ring = coords.map((c) => [c.lng, c.lat]);
   ring.push([coords[0].lng, coords[0].lat]);
 
@@ -697,15 +834,8 @@ export function generateGeoJSON(coords: GeoPoint[], properties: Record<string, a
       features: [
         {
           type: 'Feature',
-          properties: {
-            name: 'Survey Parcel Boundary',
-            generatedBy: 'Land Survey Pro',
-            ...properties,
-          },
-          geometry: {
-            type: 'Polygon',
-            coordinates: [ring],
-          },
+          properties: { name: 'Survey Boundary', ...properties },
+          geometry: { type: 'Polygon', coordinates: [ring] },
         },
       ],
     },
