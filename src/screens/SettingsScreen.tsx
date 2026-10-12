@@ -13,7 +13,7 @@ import {
   HardDriveDownload,
   HelpCircle,
   Camera,
-  Share2,
+  Check,
 } from 'lucide-react';
 
 export const SettingsScreen: React.FC = () => {
@@ -41,217 +41,277 @@ export const SettingsScreen: React.FC = () => {
   };
 
   return (
-    <div className="space-y-3.5 pb-6 max-w-xl mx-auto">
-      {/* Header */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-center justify-between">
+    <div className="space-y-3 pb-8 max-w-xl mx-auto">
+      {/* 1. Header Card */}
+      <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-xs flex items-center justify-between">
         <div>
-          <h2 className="text-xs font-semibold text-zinc-100 flex items-center gap-1.5">
-            <Wrench className="w-4 h-4 text-zinc-300" /> थप नापी सुविधाहरू (Geomatics Tools)
+          <h2 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
+            <Wrench className="w-4 h-4 text-slate-700" />
+            <span>Survey Tools & Settings (सर्भे औजार तथा सेटिङ्स)</span>
           </h2>
-          <p className="text-[10px] text-zinc-500">UTM, Cut/Fill, Stakeout, RTK & Offline Maps</p>
+          <p className="text-[11px] text-slate-500">
+            Coordinates, Cut/Fill, Stakeout, RTK Client & Offline Maps
+          </p>
         </div>
 
         <button
           onClick={() => setShowAR(true)}
-          className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs px-2.5 py-1 rounded-lg border border-zinc-700 flex items-center gap-1 font-medium transition-colors"
+          className="bg-slate-900 hover:bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 font-medium transition-colors"
         >
-          <Camera className="w-3.5 h-3.5" /> AR View
+          <Camera className="w-3.5 h-3.5" />
+          <span>AR Camera</span>
         </button>
       </div>
 
-      {/* Sub Tabs */}
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 text-xs">
+      {showAR && <ARCameraView onClose={() => setShowAR(false)} targetPointName="Boundary Peg P1" distanceMeters={14.8} />}
+
+      {/* 2. Sub-tab Buttons */}
+      <div className="bg-white border border-slate-200 rounded-xl p-1.5 shadow-xs grid grid-cols-3 sm:grid-cols-6 gap-1 text-xs font-medium">
         <button
           onClick={() => setActiveTab('coords')}
-          className={`py-1.5 px-1 rounded-lg border text-center transition-colors ${
-            activeTab === 'coords'
-              ? 'bg-zinc-800 border-zinc-700 text-zinc-100 font-medium'
-              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-850'
+          className={`py-1.5 px-1 rounded-lg text-center transition-colors ${
+            activeTab === 'coords' ? 'bg-slate-900 text-white font-semibold' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          UTM / MGRS
+          Coords (निर्देशाङ्क)
         </button>
+
         <button
           onClick={() => setActiveTab('cutfill')}
-          className={`py-1.5 px-1 rounded-lg border text-center transition-colors ${
-            activeTab === 'cutfill'
-              ? 'bg-zinc-800 border-zinc-700 text-zinc-100 font-medium'
-              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-850'
+          className={`py-1.5 px-1 rounded-lg text-center transition-colors ${
+            activeTab === 'cutfill' ? 'bg-slate-900 text-white font-semibold' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          Cut / Fill
+          Cut/Fill (माटो)
         </button>
+
         <button
           onClick={() => setActiveTab('stakeout')}
-          className={`py-1.5 px-1 rounded-lg border text-center transition-colors ${
-            activeTab === 'stakeout'
-              ? 'bg-zinc-800 border-zinc-700 text-zinc-100 font-medium'
-              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-850'
+          className={`py-1.5 px-1 rounded-lg text-center transition-colors ${
+            activeTab === 'stakeout' ? 'bg-slate-900 text-white font-semibold' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          Stakeout
+          Stakeout (नेभिगेसन)
         </button>
+
         <button
           onClick={() => setActiveTab('ntrip')}
-          className={`py-1.5 px-1 rounded-lg border text-center transition-colors ${
-            activeTab === 'ntrip'
-              ? 'bg-zinc-800 border-zinc-700 text-zinc-100 font-medium'
-              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-850'
+          className={`py-1.5 px-1 rounded-lg text-center transition-colors ${
+            activeTab === 'ntrip' ? 'bg-slate-900 text-white font-semibold' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          GNSS RTK
+          RTK GNSS
         </button>
+
         <button
           onClick={() => setActiveTab('offline')}
-          className={`py-1.5 px-1 rounded-lg border text-center transition-colors ${
-            activeTab === 'offline'
-              ? 'bg-zinc-800 border-zinc-700 text-zinc-100 font-medium'
-              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-850'
+          className={`py-1.5 px-1 rounded-lg text-center transition-colors ${
+            activeTab === 'offline' ? 'bg-slate-900 text-white font-semibold' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          अफ्लाईन नक्सा
+          Offline (अफलाइन)
         </button>
+
         <button
           onClick={() => setActiveTab('tips')}
-          className={`py-1.5 px-1 rounded-lg border text-center transition-colors ${
-            activeTab === 'tips'
-              ? 'bg-zinc-800 border-zinc-700 text-zinc-100 font-medium'
-              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-850'
+          className={`py-1.5 px-1 rounded-lg text-center transition-colors ${
+            activeTab === 'tips' ? 'bg-slate-900 text-white font-semibold' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          नापी नियम
+          Field Tips (सुझाव)
         </button>
       </div>
 
-      {/* 1. UTM / MGRS Coordinate Converter */}
+      {/* 3. TAB 1: COORDINATE CONVERSION */}
       {activeTab === 'coords' && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3 shadow-sm text-xs">
-          <div className="grid grid-cols-2 gap-2">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3.5">
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+            <MapPin className="w-4 h-4 text-slate-700" />
             <div>
-              <label className="text-[10px] text-zinc-400 block mb-0.5">Latitude (अक्षांश)</label>
+              <span className="text-xs font-semibold text-slate-800">
+                Coordinate Conversion (निर्देशाङ्क रूपान्तरण)
+              </span>
+              <p className="text-[11px] text-slate-500">
+                WGS84 Lat/Lng, UTM Projection (Zone 44N & 45N Nepal), MGRS, DMS
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-medium text-slate-700 block mb-1">
+                Latitude - अक्षांश (Decimal °)
+              </label>
               <input
                 type="number"
                 step="any"
                 value={lat}
                 onChange={(e) => setLat(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 font-mono text-zinc-100 text-xs"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-mono font-bold text-slate-900"
               />
             </div>
             <div>
-              <label className="text-[10px] text-zinc-400 block mb-0.5">Longitude (देशान्तर)</label>
+              <label className="text-[11px] font-medium text-slate-700 block mb-1">
+                Longitude - देशान्तर (Decimal °)
+              </label>
               <input
                 type="number"
                 step="any"
                 value={lng}
                 onChange={(e) => setLng(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 font-mono text-zinc-100 text-xs"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-mono font-bold text-slate-900"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-            <div className="bg-zinc-950 p-2.5 rounded-lg border border-zinc-800">
-              <span className="text-[10px] text-zinc-500 uppercase block">UTM Coordinates</span>
-              <span className="font-mono font-bold text-zinc-200 mt-0.5 block">{utm.formatted}</span>
-              <span className="text-[10px] text-zinc-500 font-mono">
-                E: {utm.easting}m | N: {utm.northing}m
+          {/* Results Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 text-xs">
+            <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-1">
+              <span className="text-[10px] text-slate-500 uppercase font-semibold">
+                UTM Projection (युटिएम)
               </span>
+              <div className="font-mono font-bold text-slate-900 text-sm">
+                {utm.formatted}
+              </div>
+              <div className="text-[11px] text-slate-600 font-mono">
+                E: {utm.easting.toLocaleString()} m | N: {utm.northing.toLocaleString()} m
+              </div>
             </div>
 
-            <div className="bg-zinc-950 p-2.5 rounded-lg border border-zinc-800">
-              <span className="text-[10px] text-zinc-500 uppercase block">MGRS Grid</span>
-              <span className="font-mono font-bold text-zinc-200 mt-0.5 block">{mgrs}</span>
-              <span className="text-[10px] text-zinc-500 font-mono">
-                DMS: {degToDms(numLat, true)}
+            <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-1">
+              <span className="text-[10px] text-slate-500 uppercase font-semibold">
+                DMS (डिग्री-मिनेट-सेकेन्ड)
               </span>
+              <div className="font-mono font-bold text-slate-900 text-xs">
+                {degToDms(numLat, true)}
+              </div>
+              <div className="font-mono font-bold text-slate-900 text-xs">
+                {degToDms(numLng, false)}
+              </div>
+            </div>
+
+            <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-1">
+              <span className="text-[10px] text-slate-500 uppercase font-semibold">
+                MGRS Military Grid (एमजीआरएस)
+              </span>
+              <div className="font-mono font-bold text-slate-900 text-sm">
+                {mgrs}
+              </div>
+            </div>
+
+            <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-1">
+              <span className="text-[10px] text-slate-500 uppercase font-semibold">
+                Nepal Geodetic Grid
+              </span>
+              <div className="text-[11px] text-slate-700">
+                MUTM Zone 44N (West) / Zone 45N (East)
+              </div>
+              <div className="text-[10px] text-slate-500 font-mono">
+                Central Meridian: 84°E / 87°E
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* 2. Cut & Fill Calculator */}
-      {activeTab === 'cutfill' && <CutFillCalculator />}
+      {/* 4. TAB 2: CUT/FILL */}
+      {activeTab === 'cutfill' && (
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+          <CutFillCalculator />
+        </div>
+      )}
 
-      {/* 3. Stakeout Compass */}
-      {activeTab === 'stakeout' && <StakeoutCompass />}
+      {/* 5. TAB 3: STAKEOUT */}
+      {activeTab === 'stakeout' && (
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+          <StakeoutCompass />
+        </div>
+      )}
 
-      {/* 4. GNSS RTK */}
-      {activeTab === 'ntrip' && <NtripConnector />}
+      {/* 6. TAB 4: NTRIP RTK */}
+      {activeTab === 'ntrip' && (
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+          <NtripConnector />
+        </div>
+      )}
 
-      {/* 5. Offline Maps */}
+      {/* 7. TAB 5: OFFLINE MAPS */}
       {activeTab === 'offline' && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3 shadow-sm text-xs">
-          <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3.5">
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+            <HardDriveDownload className="w-4 h-4 text-slate-700" />
             <div>
-              <h4 className="font-medium text-zinc-200">अफ्लाईन नक्सा क्यास (Offline Maps)</h4>
-              <p className="text-[10px] text-zinc-500">इन्टरनेट नहुने ठाउँमा नक्सा प्रयोग गर्न</p>
+              <span className="text-xs font-semibold text-slate-800">
+                Offline Map Storage (अफलाइन नक्सा सुरक्षित गर्ने)
+              </span>
+              <p className="text-[11px] text-slate-500">
+                Save cadastral satellite & terrain tiles for remote areas without internet
+              </p>
             </div>
-            <span className="font-mono font-bold text-zinc-300 bg-zinc-800 px-2 py-0.5 rounded">
-              {cachedTiles} Tiles
-            </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex items-center justify-between text-xs">
+            <div>
+              <div className="font-semibold text-slate-900">Current Cached Tiles (भण्डारित नक्सा)</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">{cachedTiles} Tiles stored locally</div>
+            </div>
             <button
               onClick={handleCacheArea}
               disabled={caching}
-              className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 py-2 rounded-lg font-medium border border-zinc-700 transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium transition-colors"
             >
-              {caching ? 'डाउनलोड हुँदैछ...' : 'हालको क्षेत्र क्यास गर्नुहोस् (Download)'}
+              {caching ? 'Caching...' : 'Download Current Region'}
             </button>
-            <button
-              onClick={() => setCachedTiles(0)}
-              className="bg-zinc-950 hover:bg-zinc-850 text-zinc-400 py-2 px-3 rounded-lg border border-zinc-800"
-            >
-              हटाउनुहोस्
-            </button>
+          </div>
+
+          <div className="text-[11px] text-slate-500 leading-relaxed">
+            Downloaded tiles work fully offline in deep valleys, hilly terraces, and remote survey sites across Nepal without mobile network.
           </div>
         </div>
       )}
 
-      {/* 6. Survey Rules & Standards */}
+      {/* 8. TAB 6: SURVEY TIPS */}
       {activeTab === 'tips' && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3 shadow-sm text-xs leading-relaxed">
-          <div className="flex items-center gap-1.5 pb-2 border-b border-zinc-800">
-            <HelpCircle className="w-4 h-4 text-zinc-300" />
-            <h4 className="font-semibold text-zinc-200">नेपाल नापी विभाग आधिकारिक मापदण्ड</h4>
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3">
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+            <HelpCircle className="w-4 h-4 text-slate-700" />
+            <div>
+              <span className="text-xs font-semibold text-slate-800">
+                Cadastral Survey Field Guide (अमिन तथा नापी निर्देशिका)
+              </span>
+              <p className="text-[11px] text-slate-500">
+                Standard methods for measuring land in Nepal
+              </p>
+            </div>
           </div>
 
-          <div className="bg-zinc-950 p-2.5 rounded-lg border border-zinc-800 space-y-1">
-            <div className="font-semibold text-zinc-200">१. पहाडी प्रणाली (Hill System):</div>
-            <p className="text-zinc-400 text-[11px]">
-              • १ रोपनी = १६ आना = ६४ पैसा = २५६ दाम = <strong>५,४७६ वर्ग फिट</strong> (५०८.७३ वर्ग मिटर)<br />
-              • १ आना = ४ पैसा = १६ दाम = <strong>३४२.२५ वर्ग फिट</strong><br />
-              • १ पैसा = ४ दाम = <strong>८५.५६ वर्ग फिट</strong><br />
-              • १ दाम = <strong>२१.३९ वर्ग फिट</strong>
-            </p>
-          </div>
+          <div className="space-y-2.5 text-xs text-slate-700 leading-relaxed">
+            <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+              <h4 className="font-semibold text-slate-900 mb-0.5">
+                1. Diagonal Triangulation (विकर्ण नाप विधि)
+              </h4>
+              <p>
+                ४ कुने जग्गा नाप्दा सधैं ४ वटै बाहिरी सीमा भुजा र कम्तीमा १ वटा छड्के विकर्ण (diagonal) नाप्नुपर्दछ। यसले जग्गालाई २ वटा त्रिभुजमा विभाजन गरी हेरोन्स सूत्र (Heron's Formula) बाट सही क्षेत्रफल दिन्छ।
+              </p>
+            </div>
 
-          <div className="bg-zinc-950 p-2.5 rounded-lg border border-zinc-800 space-y-1">
-            <div className="font-semibold text-zinc-200">२. तराई प्रणाली (Terai System):</div>
-            <p className="text-zinc-400 text-[11px]">
-              • १ बिघा = २० कट्ठा = ४०० धुर = <strong>७२,९०० वर्ग फिट</strong> (६,७७२.६३ वर्ग मिटर)<br />
-              • १ कट्ठा = २० धुर = <strong>३,६४५ वर्ग फिट</strong><br />
-              • १ धुर = <strong>१८२.२५ वर्ग फिट</strong>
-            </p>
-          </div>
+            <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+              <h4 className="font-semibold text-slate-900 mb-0.5">
+                2. Boundary Road & Footprint Deduction (बाटो र घर कटाउने)
+              </h4>
+              <p>
+                जग्गा प्लटिङ गर्दा वा घर नक्सापास गर्दा बाटोको लागि छाडिएको जग्गा (राइट अफ वे) र घरले ओगटेको क्षेत्रफल सिधै घटाउन सकिन्छ।
+              </p>
+            </div>
 
-          <div className="bg-zinc-950 p-2.5 rounded-lg border border-zinc-800 space-y-1">
-            <div className="font-semibold text-zinc-200">३. परम्परागत लम्बाई एकाइहरू:</div>
-            <p className="text-zinc-400 text-[11px]">
-              • १ हात = १.५ फिट (१८ इन्च = ०.४५७२ मिटर)<br />
-              • १ गज = ३ फिट (३६ इन्च = १ यार्ड = ०.९१४४ मिटर)<br />
-              • १ चेन = ६६ फिट (१०० लिंक्स)
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* AR Modal */}
-      {showAR && (
-        <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4">
-          <div className="w-full max-w-md">
-            <ARCameraView onClose={() => setShowAR(false)} />
+            <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+              <h4 className="font-semibold text-slate-900 mb-0.5">
+                3. Bowditch vs Transit Rule (बाउडिच र ट्रान्जिट नियम)
+              </h4>
+              <p>
+                टोटल स्टेशन वा इलेक्ट्रोनिक दूरी मापन (EDM) प्रयोग गर्दा कोण र दूरी दुवैमा बराबर त्रुटि सम्भावना हुने भएकाले बाउडिच नियम (Compass Rule) प्रयोग गरिन्छ। फित्ता नाप र थिओडोलाइट प्रयोग गर्दा ट्रान्जिट नियम प्रयोग गर्न सकिन्छ।
+              </p>
+            </div>
           </div>
         </div>
       )}
