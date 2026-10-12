@@ -1,0 +1,6 @@
+{
+  "name": "Land Survey Pro",
+  "description": "Professional land surveying, Nepali units conversion, Shoelace & Geodesic area calculation, CAD export, and RTK survey tools.",
+  "requestFramePermissions": ["camera", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
