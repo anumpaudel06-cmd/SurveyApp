@@ -451,7 +451,7 @@ export interface TraverseComputedStation {
 }
 
 export type TraverseAdjustmentRule = 'bowditch' | 'transit';
-export type SurveyClass = 'class1' | 'class2' | 'class3' | 'class4';
+export type SurveyClass = 'class1' | 'class2' | 'class3' | 'class4' | 'geodetic' | 'custom';
 
 export interface TraverseFullResult {
   stations: TraverseComputedStation[];
@@ -474,10 +474,12 @@ export interface TraverseFullResult {
 }
 
 export const SURVEY_CLASS_SPECS: Record<SurveyClass, { name: string; ratio: number; description: string }> = {
+  geodetic: { name: '1st Order Geodetic', ratio: 25000, description: '1:25,000 - High precision geodetic network' },
   class1: { name: 'Class 1 (Control Survey)', ratio: 10000, description: '1:10,000 - Higher precision cadastral control' },
   class2: { name: 'Class 2 (Urban Cadastral)', ratio: 5000, description: '1:5,000 - Standard urban plot boundary' },
   class3: { name: 'Class 3 (Rural Cadastral)', ratio: 3000, description: '1:3,000 - Rural agricultural parcels' },
   class4: { name: 'Class 4 (Reconnaissance / Rough)', ratio: 1500, description: '1:1,500 - Preliminary site reconnaissance' },
+  custom: { name: 'Custom / Manual Ratio', ratio: 2000, description: 'User-specified permissible error ratio' },
 };
 
 export function calculateFullTraverse(
@@ -485,8 +487,14 @@ export function calculateFullTraverse(
   startE = 500000,
   startN = 3000000,
   rule: TraverseAdjustmentRule = 'bowditch',
-  surveyClass: SurveyClass = 'class2'
+  surveyClass: SurveyClass = 'class2',
+  customPermissibleRatio?: number
 ): TraverseFullResult {
+  const activePermissibleRatio =
+    surveyClass === 'custom' && customPermissibleRatio && customPermissibleRatio > 0
+      ? customPermissibleRatio
+      : (SURVEY_CLASS_SPECS[surveyClass]?.ratio || 3000);
+
   if (inputs.length === 0) {
     return {
       stations: [],
@@ -503,9 +511,9 @@ export function calculateFullTraverse(
       recommendedRule: 'bowditch',
       ruleExplanation: 'Bowditch (Compass) rule balances both angles and distances equally.',
       surveyClass,
-      permissibleRatio: 5000,
+      permissibleRatio: activePermissibleRatio,
       isPermissible: true,
-      permissibleLimitStr: '1 : 5,000',
+      permissibleLimitStr: `1 : ${activePermissibleRatio.toLocaleString()}`,
     };
   }
 
@@ -544,8 +552,7 @@ export function calculateFullTraverse(
   const misclosureBearingDeg = (Math.atan2(-sumDep, -sumLat) * (180 / Math.PI) + 360) % 360;
 
   // Permissible check
-  const permissibleSpec = SURVEY_CLASS_SPECS[surveyClass];
-  const isPermissible = fractionPrecision >= permissibleSpec.ratio;
+  const isPermissible = fractionPrecision >= activePermissibleRatio;
 
   // Recommendation: Bowditch is best for total station / modern electronic surveying where distance & angle precision are balanced.
   // Transit rule is used when angular measurements are substantially more precise than taped distances.
@@ -610,9 +617,9 @@ export function calculateFullTraverse(
     recommendedRule,
     ruleExplanation,
     surveyClass,
-    permissibleRatio: permissibleSpec.ratio,
+    permissibleRatio: activePermissibleRatio,
     isPermissible,
-    permissibleLimitStr: `1 : ${permissibleSpec.ratio.toLocaleString()}`,
+    permissibleLimitStr: `1 : ${activePermissibleRatio.toLocaleString()}`,
   };
 }
 
@@ -685,6 +692,58 @@ export function degToDms(deg: number, isLat: boolean): string {
   const m = Math.floor(minFloat);
   const s = ((minFloat - m) * 60).toFixed(2);
   return `${d}° ${m}' ${s}" ${dir}`;
+}
+
+export function bearingToDms(bearingDeg: number): {
+  deg: number;
+  min: number;
+  sec: number;
+  formatted: string;
+  quadrant: string;
+} {
+  const norm = ((bearingDeg % 360) + 360) % 360;
+  const deg = Math.floor(norm);
+  const minFloat = (norm - deg) * 60;
+  const min = Math.floor(minFloat);
+  const sec = parseFloat(((minFloat - min) * 60).toFixed(1));
+
+  const formatted = `${deg}° ${String(min).padStart(2, '0')}' ${sec < 10 ? '0' : ''}${sec.toFixed(1)}"`;
+
+  let quad = '';
+  if (norm >= 0 && norm <= 90) {
+    quad = `N ${norm.toFixed(2)}° E`;
+  } else if (norm > 90 && norm <= 180) {
+    quad = `S ${(180 - norm).toFixed(2)}° E`;
+  } else if (norm > 180 && norm <= 270) {
+    quad = `S ${(norm - 180).toFixed(2)}° W`;
+  } else {
+    quad = `N ${(360 - norm).toFixed(2)}° W`;
+  }
+
+  return { deg, min, sec, formatted, quadrant: quad };
+}
+
+export function calculateForwardAzimuthAndDistance(
+  from: GeoPoint,
+  to: GeoPoint
+): { distanceMeters: number; azimuthDeg: number; dms: string; quadrant: string } {
+  const dist = haversineDistanceMeters(from, to);
+  const y = Math.sin(((to.lng - from.lng) * Math.PI) / 180) * Math.cos((to.lat * Math.PI) / 180);
+  const x =
+    Math.cos((from.lat * Math.PI) / 180) * Math.sin((to.lat * Math.PI) / 180) -
+    Math.sin((from.lat * Math.PI) / 180) *
+      Math.cos((to.lat * Math.PI) / 180) *
+      Math.cos(((to.lng - from.lng) * Math.PI) / 180);
+  let az = (Math.atan2(y, x) * 180) / Math.PI;
+  az = (az + 360) % 360;
+
+  const dmsObj = bearingToDms(az);
+  return {
+    distanceMeters: parseFloat(dist.toFixed(3)),
+    azimuthDeg: parseFloat(az.toFixed(3)),
+    dms: dmsObj.formatted,
+    quadrant: dmsObj.quadrant,
+  };
 }
 
 export interface UTMCoordinate {

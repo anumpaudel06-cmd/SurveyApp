@@ -35,6 +35,7 @@ export const TraverseScreen: React.FC = () => {
 
   // Permissible Survey Standard Class
   const [surveyClass, setSurveyClass] = useState<SurveyClass>('class2');
+  const [customRatioInput, setCustomRatioInput] = useState<string>('2000');
 
   // Traverse station legs
   const [stations, setStations] = useState<TraverseStationInput[]>([
@@ -55,9 +56,10 @@ export const TraverseScreen: React.FC = () => {
 
   const numStartE = parseFloat(startE) || 500000;
   const numStartN = parseFloat(startN) || 3000000;
+  const customRatioNum = Math.max(100, parseFloat(customRatioInput) || 2000);
 
   // Compute complete traverse adjustment
-  const result = calculateFullTraverse(stations, numStartE, numStartN, rule, surveyClass);
+  const result = calculateFullTraverse(stations, numStartE, numStartN, rule, surveyClass, customRatioNum);
 
   // Compute closed polygon area from adjusted coordinates
   const polygonPoints = result.stations.map((s) => ({ x: s.easting, y: s.northing }));
@@ -209,11 +211,38 @@ export const TraverseScreen: React.FC = () => {
               onChange={(e) => setSurveyClass(e.target.value as SurveyClass)}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs font-medium text-slate-800 dark:text-slate-200 outline-none"
             >
-              <option value="class2">Nepal Cadastral Class II (1 : 3,000)</option>
-              <option value="class1">Nepal Cadastral Class I (1 : 5,000)</option>
-              <option value="engineering">Engineering / Topo Survey (1 : 10,000)</option>
-              <option value="geodetic">Geodetic Control Survey (1 : 25,000)</option>
+              <option value="geodetic">1st Order Geodetic (1 : 25,000)</option>
+              <option value="class1">Control Survey Class 1 (1 : 10,000)</option>
+              <option value="class2">Urban Cadastral Class 2 (1 : 5,000)</option>
+              <option value="class3">Rural Cadastral Class 3 (1 : 3,000)</option>
+              <option value="class4">Reconnaissance Class 4 (1 : 1,500)</option>
+              <option value="custom">Manual / Custom Permissible Ratio...</option>
             </select>
+
+            {/* Custom Ratio Manual Input */}
+            {surveyClass === 'custom' && (
+              <div className="mt-2 p-2 rounded-lg bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 space-y-1">
+                <label className="text-[10px] font-semibold text-blue-700 dark:text-blue-300 flex items-center justify-between">
+                  <span>Enter Custom Permissible Ratio (1 : X)</span>
+                  <span className="font-mono">1 : {customRatioNum.toLocaleString()}</span>
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-mono font-bold text-slate-500">1 :</span>
+                  <input
+                    type="number"
+                    min="100"
+                    step="50"
+                    value={customRatioInput}
+                    onChange={(e) => setCustomRatioInput(e.target.value)}
+                    placeholder="e.g. 2000"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-xs font-mono font-bold text-slate-900 dark:text-slate-100 outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <span className="text-[9px] text-slate-500 block">
+                  Write any permissible ratio required for your local survey project (e.g. 1500, 2000, 3000, 5000).
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Adjustment Rule: Bowditch vs Transit */}
