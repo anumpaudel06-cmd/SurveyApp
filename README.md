@@ -1,5 +1,15 @@
 # Land Survey Pro 🌐📐
 
+[![Download APK](https://img.shields.io/badge/Download-LandSurveyPro--v1.0.apk-success?style=for-the-badge&logo=android)](https://github.com/anumpaudel06-cmd/SurveyApp/raw/main/LandSurveyPro.apk)
+[![GitHub Releases](https://img.shields.io/badge/Releases-v1.0.0-blue?style=for-the-badge&logo=github)](https://github.com/anumpaudel06-cmd/SurveyApp/releases/tag/v1.0.0)
+
+> ### 📱 Direct Android APK Download
+> 
+> - 📥 **Direct Repo File Download**: **[Download LandSurveyPro.apk](https://github.com/anumpaudel06-cmd/SurveyApp/raw/main/LandSurveyPro.apk)** *(Committed directly in this repo root)*
+> - 📦 **GitHub Releases Download**: **[LandSurveyPro-v1.0.apk](https://github.com/anumpaudel06-cmd/SurveyApp/releases/download/v1.0.0/LandSurveyPro-v1.0.apk)**
+> 
+> *File size: ~4.3 MB | Android version: 8.0+ (API 26 to 35)*
+
 Professional Cadastral Land Surveying, Traditional Nepali Measurement Converter, and GNSS RTK Engineering Suite.
 
 ---
